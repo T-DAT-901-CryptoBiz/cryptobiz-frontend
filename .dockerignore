@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+pnpm-lock.yaml
+yarn.lock
+.git
+.gitignore
+.husky
+.nuxt
+.output
+.cache
+dist
+coverage
+Dockerfile
+docker-compose*.yml
