@@ -1,5 +1,8 @@
 <template>
-  <div class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
+  <div
+    class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden"
+    :style="{ height: height + 'px' }"
+  >
     <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
       <h3 class="font-semibold">Whale Prints</h3>
       <div class="text-xs text-white/60 flex items-center gap-2">
@@ -12,7 +15,7 @@
       </div>
     </div>
 
-    <div class="divide-y divide-white/5 overflow-auto" style="max-height: 300px">
+    <div class="divide-y divide-white/5 overflow-auto" :style="{ height: height - 44 + 'px' }">
       <div v-for="t in big" :key="t.id" class="px-4 py-2 text-sm flex items-center justify-between">
         <div :class="t.isBuyerMaker ? 'text-red-400' : 'text-green-400'" class="tabular-nums">
           ${{ Number(t.price).toLocaleString() }}
@@ -40,7 +43,10 @@ import { useBinanceWS } from '~/composables/useBinanceWS'
 
 type Trade = { id: number; price: string; qty: string; time: number; isBuyerMaker: boolean }
 
-const props = withDefaults(defineProps<{ symbol: string }>(), {})
+const props = withDefaults(defineProps<{ symbol: string; height?: number }>(), {
+  height: 300,
+})
+
 const { recentTrades } = useBinanceMarket()
 const { connect } = useBinanceWS()
 

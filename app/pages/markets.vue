@@ -3,7 +3,7 @@
     <div class="flex items-center gap-3">
       <input
         v-model="q"
-        placeholder="Rechercher un symbole (ex: BTCUSDT)…"
+        placeholder="Search for a symbol (e.g., BTCUSDT)…"
         class="w-full max-w-sm rounded-xl bg-neutral-900/70 border border-white/10 px-3 py-2 text-sm"
       />
     </div>

@@ -109,27 +109,80 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useTicker } from '~/composables/useTicker'
 import { useAll24h } from '~/composables/useAll24h'
 import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
+import { useBinanceWS } from '~/composables/useBinanceWS'
 
 const props = defineProps<{ symbol: string }>()
 const base = computed(() => props.symbol.replace(/(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/, ''))
 
 const { data: t, pending } = useTicker(props.symbol)
 
-const last = computed(() => Number(t.value?.lastPrice ?? 0))
+const { connect } = useBinanceWS()
+const livePrice = ref<number | null>(null)
+const liveChange = ref<number | null>(null)
+let stop: (() => void) | null = null
+
+interface MiniTickerWS {
+  c: string
+  o?: string
+  P?: string
+}
+function isMiniTickerWS(x: unknown): x is MiniTickerWS {
+  if (!x || typeof x !== 'object') return false
+  const v = x as Record<string, unknown>
+  return typeof v.c === 'string'
+}
+
+const restLast = computed(() => Number(t.value?.lastPrice ?? NaN))
+const restPct = computed(() => Number(t.value?.priceChangePercent ?? NaN))
+const restOpen = computed(() => {
+  const L = restLast.value
+  const P = restPct.value
+  return Number.isFinite(L) && Number.isFinite(P) ? L / (1 + P / 100) : NaN
+})
+
+function openMiniTicker() {
+  if (import.meta.server) return
+  stop?.()
+  livePrice.value = null
+  liveChange.value = null
+  stop = connect(`${props.symbol.toLowerCase()}@miniTicker`, {
+    onMessage: (msg) => {
+      if (!isMiniTickerWS(msg)) return
+      const c = Number(msg.c)
+      livePrice.value = Number.isFinite(c) ? c : null
+      if (typeof msg.P === 'string') {
+        const p = Number(msg.P)
+        if (Number.isFinite(p)) liveChange.value = p
+        return
+      }
+      const oWS = msg.o !== undefined ? Number(msg.o) : NaN
+      const open = Number.isFinite(oWS) ? oWS : restOpen.value
+      if (Number.isFinite(open) && Number.isFinite(c) && open > 0) {
+        liveChange.value = (c / open - 1) * 100
+      }
+    },
+  })
+}
+
+onMounted(openMiniTicker)
+onBeforeUnmount(() => stop?.())
+watch(() => props.symbol, openMiniTicker)
+
+const last = computed(() => livePrice.value ?? Number(t.value?.lastPrice ?? 0))
 const high = computed(() => Number(t.value?.highPrice ?? 0))
 const low = computed(() => Number(t.value?.lowPrice ?? 0))
-const chg = computed(() => Number(t.value?.priceChangePercent ?? 0))
+const chg = computed(() => liveChange.value ?? Number(t.value?.priceChangePercent ?? 0))
 const quoteVol = computed(() => Number(t.value?.quoteVolume ?? 0))
 const baseVol = computed(() => Number(t.value?.volume ?? 0))
 
 const marker = computed(() => {
-  const lo = low.value,
-    hi = high.value,
-    l = last.value
+  const lo = low.value
+  const hi = high.value
+  const l = last.value
   const span = Math.max(hi - lo, 1e-12)
   const pct = ((l - lo) / span) * 100
   return Math.min(100, Math.max(0, pct))
@@ -147,7 +200,6 @@ const topPairs = computed(() => {
 })
 
 const money = (n: number) => (n ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0')
-
 const compactFmt = new Intl.NumberFormat(undefined, {
   notation: 'compact',
   maximumFractionDigits: 2,

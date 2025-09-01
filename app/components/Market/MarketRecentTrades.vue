@@ -1,11 +1,14 @@
 <template>
-  <div class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
+  <div
+    class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden"
+    :style="{ height: height + 'px' }"
+  >
     <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
       <h3 class="font-semibold">Recent Trades</h3>
       <div class="text-xs text-white/50">Last {{ limit }}</div>
     </div>
 
-    <div class="divide-y divide-white/5 overflow-auto" :style="{ height: height + 'px' }">
+    <div class="divide-y divide-white/5 overflow-auto" :style="{ height: height - 44 + 'px' }">
       <template v-if="!pending">
         <div
           v-for="t in trades"
