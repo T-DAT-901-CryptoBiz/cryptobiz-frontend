@@ -56,6 +56,10 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue'
+import { useBinanceWS } from '~/composables/useBinanceWS'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+
 const props = withDefaults(
   defineProps<{ symbol: string; limit?: 5 | 10 | 20 | 50 | 100; height?: number }>(),
   { limit: 50, height: 300 },
@@ -103,20 +107,32 @@ async function seed() {
   pending.value = false
 }
 
+interface DepthPartialMsg {
+  bids?: [string, string][]
+  asks?: [string, string][]
+}
+
+function isDepthPartialMsg(x: unknown): x is DepthPartialMsg {
+  if (!x || typeof x !== 'object') return false
+  const v = x as { bids?: unknown; asks?: unknown }
+  const okTuple = (t: unknown): t is [string, string] =>
+    Array.isArray(t) && t.length === 2 && typeof t[0] === 'string' && typeof t[1] === 'string'
+  const okSide = (side: unknown) => Array.isArray(side) && side.every(okTuple)
+  return (!v.bids || okSide(v.bids)) && (!v.asks || okSide(v.asks))
+}
+
 let stop: (() => void) | null = null
 
 function openWS() {
   if (import.meta.server) return
   stop?.()
-  // stream partiel top N niveaux, 100ms
   const path = `${props.symbol.toLowerCase()}@depth${props.limit}@100ms`
   stop = connect(path, {
-    onMessage: (m: any) => {
-      if (m?.asks && m?.bids) {
-        asks.value = m.asks as [string, string][]
-        bids.value = m.bids as [string, string][]
-        pending.value = false
-      }
+    onMessage: (m) => {
+      if (!isDepthPartialMsg(m)) return
+      if (m.asks) asks.value = m.asks
+      if (m.bids) bids.value = m.bids
+      pending.value = false
     },
   })
 }

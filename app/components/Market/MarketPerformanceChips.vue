@@ -24,6 +24,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useKlines } from '~/composables/useKlines'
+
 import type { Interval } from '~/types/binance'
 
 const props = defineProps<{ symbol: string }>()
@@ -55,5 +58,6 @@ const perf = computed(() => [
   { label: '24h', value: h1.change.value, loading: !h1.ready.value },
   { label: '7d', value: h4.change.value, loading: !h4.ready.value },
   { label: '1m', value: d7.change.value, loading: !d7.ready.value },
+  { label: '1y', value: d1.change.value, loading: !d1.ready.value },
 ])
 </script>

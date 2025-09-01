@@ -37,8 +37,20 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue'
+import { useBinanceWS } from '~/composables/useBinanceWS'
+
 const props = withDefaults(defineProps<{ symbol: string; height?: number }>(), { height: 160 })
 const { connect } = useBinanceWS()
+
+interface BookTickerMsg {
+  u: number
+  s: string
+  b: string
+  B: string
+  a: string
+  A: string
+}
 
 const bid = ref(0)
 const ask = ref(0)
@@ -58,12 +70,13 @@ function open() {
   if (import.meta.server) return
   stop?.()
   stop = connect(`${props.symbol.toLowerCase()}@bookTicker`, {
-    onMessage: (m: any) => {
-      if (!m?.b || !m?.a) return
+    onMessage: (msg: unknown) => {
+      const m = msg as Partial<BookTickerMsg>
+      if (typeof m.b !== 'string' || typeof m.a !== 'string') return
       bid.value = Number(m.b)
       ask.value = Number(m.a)
-      bidQty.value = Number(m.B || 0)
-      askQty.value = Number(m.A || 0)
+      bidQty.value = Number(m.B ?? 0)
+      askQty.value = Number(m.A ?? 0)
       pending.value = false
     },
   })

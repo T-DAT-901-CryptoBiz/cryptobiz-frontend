@@ -108,7 +108,9 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
 import { watch } from 'vue'
+import { useState } from '#app'
 
 const route = useRoute()
 

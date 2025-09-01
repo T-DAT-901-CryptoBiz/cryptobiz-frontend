@@ -16,20 +16,29 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useAll24h } from '~/composables/useAll24h'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import type { ExchangeInfo } from '~/types/binance'
+
 const { rows, pending } = useAll24h()
 const { exchangeInfo } = useBinanceMarket()
 
 const sym2Base = ref<Record<string, string>>({})
 const sym2Quote = ref<Record<string, string>>({})
+
 onMounted(async () => {
   const r = await exchangeInfo()
   await r.refresh()
-  const b: Record<string, string> = {},
-    q: Record<string, string> = {}
-  r.data.value?.symbols?.forEach((s: any) => {
+  const b: Record<string, string> = {}
+  const q: Record<string, string> = {}
+
+  type Sym = ExchangeInfo['symbols'][number]
+  r.data.value?.symbols?.forEach((s: Sym) => {
     b[s.symbol] = s.baseAsset
     q[s.symbol] = s.quoteAsset
   })
+
   sym2Base.value = b
   sym2Quote.value = q
 })

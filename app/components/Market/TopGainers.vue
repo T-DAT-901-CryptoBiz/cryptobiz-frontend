@@ -32,6 +32,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
 import type { Ticker24h } from '~/types/binance'
 
 const props = withDefaults(defineProps<{ symbols?: string[]; limit?: number }>(), {

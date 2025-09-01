@@ -1,3 +1,5 @@
+import type { ExchangeInfo } from '~/types/binance'
+
 type SymMaps = { base: Record<string, string>; quote: Record<string, string> }
 
 export function useSymbolsUniverse() {
@@ -14,14 +16,17 @@ export function useSymbolsUniverse() {
     loading.value = true
 
     const r = await exchangeInfo()
-    if (typeof r.refresh === 'function') await r.refresh()
+    await r.refresh?.()
 
-    const info = r.data.value as any
+    const info = r.data.value
+
     const list: string[] = []
     const base: Record<string, string> = {}
     const quote: Record<string, string> = {}
 
-    for (const s of info?.symbols ?? []) {
+    const symbols: ExchangeInfo['symbols'] = info?.symbols ?? []
+
+    for (const s of symbols) {
       if (s.status === 'TRADING' && STABLE.has(s.quoteAsset)) {
         list.push(s.symbol)
         base[s.symbol] = s.baseAsset

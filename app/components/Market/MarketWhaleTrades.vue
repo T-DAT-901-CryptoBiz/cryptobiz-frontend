@@ -34,7 +34,12 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref, watch, computed } from 'vue'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import { useBinanceWS } from '~/composables/useBinanceWS'
+
 type Trade = { id: number; price: string; qty: string; time: number; isBuyerMaker: boolean }
+
 const props = withDefaults(defineProps<{ symbol: string }>(), {})
 const { recentTrades } = useBinanceMarket()
 const { connect } = useBinanceWS()
@@ -43,9 +48,51 @@ const buf = ref<Trade[]>([])
 const pending = ref(true)
 const minUsd = ref(50_000)
 
+interface RecentTradeREST {
+  id: number
+  price: string
+  qty: string
+  time: number
+  isBuyerMaker: boolean
+}
+
+function isRecentTradeREST(x: unknown): x is RecentTradeREST {
+  if (!x || typeof x !== 'object') return false
+  const v = x as Record<string, unknown>
+  return (
+    typeof v.id === 'number' &&
+    typeof v.price === 'string' &&
+    typeof v.qty === 'string' &&
+    typeof v.time === 'number' &&
+    typeof v.isBuyerMaker === 'boolean'
+  )
+}
+
+interface TradeWS {
+  p: string
+  q: string
+  t: number
+  T: number
+  m: boolean
+}
+
+function isTradeWS(x: unknown): x is TradeWS {
+  if (!x || typeof x !== 'object') return false
+  const v = x as Record<string, unknown>
+  return (
+    typeof v.p === 'string' &&
+    typeof v.q === 'string' &&
+    typeof v.t === 'number' &&
+    typeof v.T === 'number' &&
+    typeof v.m === 'boolean'
+  )
+}
+
 async function seed() {
+  pending.value = true
   const r = await recentTrades(props.symbol, 100)
-  buf.value = ((r.data.value || []) as any[]).map((t) => ({
+  const arr = (r.data.value ?? []) as unknown[]
+  buf.value = arr.filter(isRecentTradeREST).map((t) => ({
     id: t.id,
     price: t.price,
     qty: t.qty,
@@ -61,11 +108,11 @@ function open() {
   if (import.meta.server) return
   stop?.()
   stop = connect(`${props.symbol.toLowerCase()}@trade`, {
-    onMessage: (m: any) => {
-      if (!m?.p) return
-      const usd = Number(m.p) * Number(m.q)
+    onMessage: (msg) => {
+      if (!isTradeWS(msg)) return
+      const usd = Number(msg.p) * Number(msg.q)
       if (usd >= minUsd.value) {
-        buf.value.unshift({ id: m.t, price: m.p, qty: m.q, time: m.T, isBuyerMaker: m.m })
+        buf.value.unshift({ id: msg.t, price: msg.p, qty: msg.q, time: msg.T, isBuyerMaker: msg.m })
         if (buf.value.length > 200) buf.value.length = 200
       }
       pending.value = false

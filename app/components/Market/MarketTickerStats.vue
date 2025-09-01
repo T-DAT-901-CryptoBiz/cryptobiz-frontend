@@ -10,6 +10,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Ticker24h } from '~/types/binance'
 
 const props = defineProps<{ ticker?: Partial<Ticker24h>; pending?: boolean }>()

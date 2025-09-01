@@ -29,6 +29,10 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue'
+import { useBinanceWS } from '~/composables/useBinanceWS'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+
 const props = withDefaults(defineProps<{ symbol: string; limit?: number; height?: number }>(), {
   limit: 50,
   height: 220,
@@ -40,18 +44,23 @@ const asks = ref<[number, number][]>([])
 const bids = ref<[number, number][]>([])
 const pending = ref(true)
 
+interface DepthPartialMsg {
+  lastUpdateId?: number
+  bids?: [string, string][]
+  asks?: [string, string][]
+}
+
 async function seed() {
   const r = await orderBook(props.symbol, Math.min(props.limit as number, 100))
-  const A = (r.data.value?.asks || [])
+  const asksRaw = (r.data.value?.asks || [])
     .slice(-props.limit)
-    .map((x: [string, string]) => [Number(x[0]), Number(x[1])]) as [number, number][]
-  const B = (r.data.value?.bids || [])
+    .map(([p, q]: [string, string]) => [Number(p), Number(q)] as [number, number])
+  const bidsRaw = (r.data.value?.bids || [])
     .slice(0, props.limit)
-    .map((x: [string, string]) => [Number(x[0]), Number(x[1])]) as [number, number][]
-  cum(A, true)
-  cum(B, false)
-  asks.value = A
-  bids.value = B
+    .map(([p, q]: [string, string]) => [Number(p), Number(q)] as [number, number])
+
+  asks.value = cum(asksRaw, true)
+  bids.value = cum(bidsRaw, false)
   pending.value = false
 }
 
@@ -61,38 +70,35 @@ function open() {
   if (import.meta.server) return
   stop?.()
   stop = connect(`${props.symbol.toLowerCase()}@depth${props.limit}@100ms`, {
-    onMessage: (m: any) => {
-      if (!m?.asks || !m?.bids) return
-      const A = (m.asks as [string, string][]).map(([p, q]) => [Number(p), Number(q)]) as [
-        number,
-        number,
-      ][]
-      const B = (m.bids as [string, string][]).map(([p, q]) => [Number(p), Number(q)]) as [
-        number,
-        number,
-      ][]
-      cum(A, true)
-      cum(B, false)
-      asks.value = A
-      bids.value = B
+    onMessage: (msg: unknown) => {
+      const m = msg as DepthPartialMsg
+      if (!Array.isArray(m.asks) || !Array.isArray(m.bids)) return
+
+      const asksRaw = m.asks.map(([p, q]) => [Number(p), Number(q)] as [number, number])
+      const bidsRaw = m.bids.map(([p, q]) => [Number(p), Number(q)] as [number, number])
+
+      asks.value = cum(asksRaw, true)
+      bids.value = cum(bidsRaw, false)
       pending.value = false
     },
   })
 }
 
-function cum(arr: [number, number][], reverse: boolean) {
+function cum(arr: ReadonlyArray<[number, number]>, reverse: boolean): [number, number][] {
+  const out = new Array<[number, number]>(arr.length)
   let s = 0
   if (reverse) {
     for (let i = arr.length - 1; i >= 0; i--) {
       s += arr[i][1]
-      ;(arr as any)[i] = [arr[i][0], s]
+      out[i] = [arr[i][0], s]
     }
   } else {
     for (let i = 0; i < arr.length; i++) {
       s += arr[i][1]
-      ;(arr as any)[i] = [arr[i][0], s]
+      out[i] = [arr[i][0], s]
     }
   }
+  return out
 }
 
 onMounted(async () => {

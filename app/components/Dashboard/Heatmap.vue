@@ -32,6 +32,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAll24h } from '~/composables/useAll24h'
+
 const props = withDefaults(defineProps<{ limit?: number }>(), { limit: 24 })
 
 const { rows, pending } = useAll24h()
@@ -46,7 +49,7 @@ const tiles = computed(() => {
         symbol: r.symbol,
         price: Number(r.lastPrice || 0),
         pct,
-        hue: pct >= 0 ? 150 : 0, // vert/rouge
+        hue: pct >= 0 ? 150 : 0,
         alpha: Math.min(0.9, Math.abs(pct) / 10 + 0.15),
       }
     })

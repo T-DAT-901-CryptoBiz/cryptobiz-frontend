@@ -7,7 +7,7 @@
         <template v-if="isUniverseLoading">
           <span class="inline-block h-4 w-16 rounded bg-white/10 animate-pulse" />
         </template>
-        <template v-else> Rows: {{ pool.length.toLocaleString() }} </template>
+        <template v-else> Rows: {{ pool.length.toLocaleString() }}</template>
       </div>
     </div>
 
@@ -115,6 +115,12 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, reactive, ref, watch, computed } from 'vue'
+import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
+import { useKlines } from '~/composables/useKlines'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import type { Ticker24h } from '~/types/binance'
+
 type Row = {
   symbol: string
   price: number
@@ -125,28 +131,7 @@ type Row = {
 
 const props = withDefaults(
   defineProps<{ symbols?: string[]; pageSize?: number; autoRefreshMs?: number }>(),
-  {
-    symbols: undefined,
-    pageSize: 50,
-    autoRefreshMs: 0,
-  },
-)
-
-let liveId: ReturnType<typeof setInterval> | null = null
-onMounted(() => {
-  if (props.autoRefreshMs > 0) {
-    liveId = setInterval(() => loadPage(), props.autoRefreshMs)
-  }
-})
-onBeforeUnmount(() => {
-  if (liveId) clearInterval(liveId)
-})
-watch(
-  () => props.autoRefreshMs,
-  (ms) => {
-    if (liveId) clearInterval(liveId)
-    if (ms > 0) liveId = setInterval(() => loadPage(), ms)
-  },
+  { symbols: undefined, pageSize: 50, autoRefreshMs: 0 },
 )
 
 const { universe, maps } = useSymbolsUniverse()
@@ -175,9 +160,14 @@ const { ticker24h } = useBinanceMarket()
 
 async function makeRow(sym: string): Promise<Row> {
   const t = await ticker24h(sym)
-  const r = t.data.value as any
+  const v = t.data.value
+  const r = (Array.isArray(v) ? v.find((x) => (x as Ticker24h).symbol === sym) : v) as
+    | Ticker24h
+    | undefined
+
   const { candles, refresh } = useKlines(sym, '1h', 24 * 7)
   await refresh()
+
   return {
     symbol: sym,
     price: Number(r?.lastPrice ?? 0),
@@ -200,6 +190,24 @@ async function loadPage() {
     loading.value = false
   }
 }
+
+let liveId: number | null = null
+onMounted(() => {
+  if ((props.autoRefreshMs ?? 0) > 0) {
+    liveId = globalThis.setInterval(() => loadPage(), props.autoRefreshMs!)
+  }
+})
+onBeforeUnmount(() => {
+  if (liveId !== null) globalThis.clearInterval(liveId)
+})
+watch(
+  () => props.autoRefreshMs,
+  (ms) => {
+    if (liveId !== null) globalThis.clearInterval(liveId)
+    liveId = null
+    if ((ms ?? 0) > 0) liveId = globalThis.setInterval(() => loadPage(), ms!)
+  },
+)
 
 watch(
   [pool, perPage],
@@ -234,5 +242,5 @@ const isUniverseLoading = computed(() => !props.symbols?.length && universe.valu
 const isPageLoading = computed(() => viewSymbols.value.some((s) => !cache.has(s)))
 const missingCount = computed(() => Math.max(0, viewSymbols.value.length - rows.value.length))
 
-const pageCount = computed(() => Math.max(1, Math.ceil(pool.value.length / perPage.value)))
+defineExpose({ maps, setSort })
 </script>

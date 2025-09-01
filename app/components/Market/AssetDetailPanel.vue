@@ -33,6 +33,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useTicker } from '~/composables/useTicker'
+
 const props = defineProps<{ symbol: string }>()
 const tvSymbol = computed(() => `BINANCE:${props.symbol}`)
 const { data: t, pending } = useTicker(props.symbol)

@@ -82,6 +82,7 @@
 import type { Interval } from '~/types/binance'
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useTicker } from '~/composables/useTicker'
 
 const route = useRoute()
 const symbol = computed(() => String(route.params.symbol || 'BTCUSDT'))

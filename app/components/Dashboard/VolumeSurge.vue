@@ -17,15 +17,21 @@
         <NuxtLink :to="`/asset/${r.symbol}`" class="font-medium hover:underline">
           {{ i + 1 }}. {{ r.symbol }}
         </NuxtLink>
-        <span class="tabular-nums text-sm"
-          >${{ Math.round(r.vol24).toLocaleString() }} • ×{{ r.ratio.toFixed(2) }}</span
-        >
+        <span class="tabular-nums text-sm">
+          ${{ Math.round(r.vol24).toLocaleString() }} • ×{{ r.ratio.toFixed(2) }}
+        </span>
       </li>
     </ul>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useKlines } from '~/composables/useKlines'
+import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import type { Ticker24h } from '~/types/binance'
+
 const { universe } = useSymbolsUniverse()
 const top = ref<{ symbol: string; ratio: number; vol24: number }[]>([])
 const loading = ref(true)
@@ -35,19 +41,25 @@ const { ticker24h } = useBinanceMarket()
 onMounted(async () => {
   loading.value = true
   const res: { symbol: string; ratio: number; vol24: number }[] = []
-  const bucket = universe.slice(0, 12)
+
+  const bucket = universe.value.slice(0, 12)
+
   const tickers = await Promise.all(bucket.map((s) => ticker24h(s)))
+
   for (let i = 0; i < bucket.length; i++) {
     const sym = bucket[i]
-    const t = tickers[i].data.value as any
-    const vol24 = Number(t?.quoteVolume || 0)
+    const t = tickers[i].data.value as Ticker24h | undefined
+    const vol24 = Number(t?.quoteVolume ?? 0)
 
     const { candles, refresh } = useKlines(sym, '1h', 24 * 7)
     await refresh()
-    const qavg = candles.value.reduce((a, c) => a + c.close * c.volume, 0) / 7
-    const ratio = qavg ? vol24 / qavg : 0
+    const sumQuote = candles.value.reduce((a, c) => a + c.close * c.volume, 0)
+    const qavgDay = sumQuote / 7
+    const ratio = qavgDay ? vol24 / qavgDay : 0
+
     res.push({ symbol: sym, ratio, vol24 })
   }
+
   top.value = res.sort((a, b) => b.ratio - a.ratio).slice(0, 5)
   loading.value = false
 })

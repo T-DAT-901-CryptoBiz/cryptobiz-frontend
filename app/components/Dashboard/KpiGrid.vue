@@ -32,7 +32,10 @@
 </template>
 
 <script setup lang="ts">
-const { rows, pending, refresh } = useAll24h()
+import { computed } from 'vue'
+import { useAll24h } from '~/composables/useAll24h'
+
+const { rows, pending } = useAll24h()
 
 const totalPairs = computed(() => rows.value.length)
 const totalVol = computed(() => rows.value.reduce((acc, r) => acc + Number(r.quoteVolume || 0), 0))

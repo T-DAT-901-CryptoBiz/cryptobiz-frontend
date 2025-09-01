@@ -52,6 +52,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAll24h } from '~/composables/useAll24h'
+import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
+
 const props = defineProps<{ base: string }>()
 
 const STABLE = new Set(['USDT', 'FDUSD', 'USDC', 'BUSD', 'TUSD', 'USD'])

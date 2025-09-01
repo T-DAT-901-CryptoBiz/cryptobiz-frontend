@@ -9,6 +9,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useAll24h } from '~/composables/useAll24h'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import type { ExchangeInfo } from '~/types/binance'
+
 const props = withDefaults(defineProps<{ top?: number }>(), { top: 5 })
 const { rows, pending } = useAll24h()
 const { exchangeInfo } = useBinanceMarket()
@@ -19,7 +24,8 @@ onMounted(async () => {
   await r.refresh()
   if (r.data.value?.symbols) {
     const map: Record<string, string> = {}
-    r.data.value.symbols.forEach((s: any) => {
+    type Sym = ExchangeInfo['symbols'][number]
+    r.data.value.symbols.forEach((s: Sym) => {
       map[s.symbol] = s.quoteAsset
     })
     sym2Quote.value = map

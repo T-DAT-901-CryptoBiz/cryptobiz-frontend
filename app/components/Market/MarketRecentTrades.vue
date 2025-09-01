@@ -32,6 +32,10 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useBinanceWS } from '~/composables/useBinanceWS'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+
 type Trade = {
   id: number
   price: string
@@ -56,8 +60,35 @@ const pending = ref(true)
 async function seed() {
   pending.value = true
   const r = await recentTrades(props.symbol, Math.min(props.limit, 100))
-  trades.value = (r.data.value || []) as unknown as Trade[]
+  trades.value = (r.data.value ?? []) as Trade[]
+  if (trades.value.length > props.limit) trades.value.length = props.limit
   pending.value = false
+}
+
+interface TradeWS {
+  e: 'trade'
+  E: number
+  s: string
+  t: number
+  p: string
+  q: string
+  b: number
+  a: number
+  T: number
+  m: boolean
+  M: boolean
+}
+
+function isTradeWS(x: unknown): x is TradeWS {
+  if (!x || typeof x !== 'object') return false
+  const v = x as Record<string, unknown>
+  return (
+    typeof v.p === 'string' &&
+    typeof v.q === 'string' &&
+    typeof v.t === 'number' &&
+    typeof v.T === 'number' &&
+    typeof v.m === 'boolean'
+  )
 }
 
 let stop: (() => void) | null = null
@@ -67,21 +98,19 @@ function openWS() {
   stop?.()
   const path = `${props.symbol.toLowerCase()}@trade`
   stop = connect(path, {
-    onMessage: (m: any) => {
-      if (!m?.p) return
+    onMessage: (msg) => {
+      if (!isTradeWS(msg)) return
       const row: Trade = {
-        id: m.t,
-        price: m.p,
-        qty: m.q,
-        quoteQty: String(Number(m.p) * Number(m.q)),
-        time: m.T,
-        isBuyerMaker: m.m,
+        id: msg.t,
+        price: msg.p,
+        qty: msg.q,
+        quoteQty: String(Number(msg.p) * Number(msg.q)),
+        time: msg.T,
+        isBuyerMaker: msg.m,
         isBestMatch: true,
       }
       trades.value.unshift(row)
-      if (trades.value.length > props.limit) {
-        trades.value.length = props.limit
-      }
+      if (trades.value.length > props.limit) trades.value.length = props.limit
       pending.value = false
     },
   })

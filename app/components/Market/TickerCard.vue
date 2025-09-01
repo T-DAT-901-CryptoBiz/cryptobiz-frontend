@@ -21,6 +21,8 @@
 </template>
 
 <script setup lang="ts">
+import { useTicker } from '~/composables/useTicker'
+
 const props = defineProps<{ symbol: string }>()
 const { data: ticker, pending } = useTicker(props.symbol)
 </script>

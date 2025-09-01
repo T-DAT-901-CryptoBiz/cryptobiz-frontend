@@ -25,19 +25,66 @@
 </template>
 
 <script setup lang="ts">
-type Trade = { p: string; q: string; m: boolean }
+import { onBeforeUnmount, onMounted, watch, computed, ref } from 'vue'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import { useBinanceWS } from '~/composables/useBinanceWS'
+
+type MiniTrade = { p: string; q: string; m: boolean }
+
 const props = withDefaults(defineProps<{ symbol: string; window?: number }>(), { window: 400 })
+
 const { recentTrades } = useBinanceMarket()
 const { connect } = useBinanceWS()
 
-const buf: Trade[] = reactive([])
+const buf = ref<MiniTrade[]>([])
 const pending = ref(true)
 
+interface RecentTradeREST {
+  id: number
+  price: string
+  qty: string
+  quoteQty?: string
+  time: number
+  isBuyerMaker: boolean
+  isBestMatch?: boolean
+}
+
+function isRecentTradeREST(x: unknown): x is RecentTradeREST {
+  if (!x || typeof x !== 'object') return false
+  const v = x as Record<string, unknown>
+  return (
+    typeof v.price === 'string' && typeof v.qty === 'string' && typeof v.isBuyerMaker === 'boolean'
+  )
+}
+
+interface TradeWS {
+  e: 'trade'
+  E: number
+  s: string
+  t: number
+  p: string
+  q: string
+  b: number
+  a: number
+  T: number
+  m: boolean
+  M: boolean
+}
+
+function isTradeWS(x: unknown): x is TradeWS {
+  if (!x || typeof x !== 'object') return false
+  const v = x as Record<string, unknown>
+  return typeof v.p === 'string' && typeof v.q === 'string' && typeof v.m === 'boolean'
+}
+
 async function seed() {
+  pending.value = true
   const r = await recentTrades(props.symbol, Math.min(props.window, 100))
-  const list =
-    (r.data.value as any[])?.map((t) => ({ p: t.price, q: t.qty, m: t.isBuyerMaker })) || []
-  buf.splice(0, buf.length, ...list)
+  const arr = (r.data.value ?? []) as unknown[]
+  const list = arr
+    .filter(isRecentTradeREST)
+    .map<MiniTrade>((t) => ({ p: t.price, q: t.qty, m: t.isBuyerMaker }))
+  buf.value = list.slice(0, props.window)
   pending.value = false
 }
 
@@ -47,10 +94,10 @@ function open() {
   if (import.meta.server) return
   stop?.()
   stop = connect(`${props.symbol.toLowerCase()}@trade`, {
-    onMessage: (m: any) => {
-      if (!m?.p) return
-      buf.unshift({ p: m.p, q: m.q, m: m.m })
-      if (buf.length > props.window) buf.length = props.window
+    onMessage: (msg) => {
+      if (!isTradeWS(msg)) return
+      buf.value.unshift({ p: msg.p, q: msg.q, m: msg.m })
+      if (buf.value.length > props.window) buf.value.length = props.window
       pending.value = false
     },
   })
@@ -69,10 +116,15 @@ watch(
   },
 )
 
-const buyUsd = computed(() => buf.reduce((a, t) => a + (!t.m ? Number(t.p) * Number(t.q) : 0), 0))
-const sellUsd = computed(() => buf.reduce((a, t) => a + (t.m ? Number(t.p) * Number(t.q) : 0), 0))
+const buyUsd = computed(() =>
+  buf.value.reduce((a, t) => a + (!t.m ? Number(t.p) * Number(t.q) : 0), 0),
+)
+const sellUsd = computed(() =>
+  buf.value.reduce((a, t) => a + (t.m ? Number(t.p) * Number(t.q) : 0), 0),
+)
 const total = computed(() => Math.max(1, buyUsd.value + sellUsd.value))
 const buyPct = computed(() => (buyUsd.value / total.value) * 100)
+
 const chart = computed(() => [
   { label: 'Buy', value: buyUsd.value, color: '#10b981' },
   { label: 'Sell', value: sellUsd.value, color: '#ef4444' },

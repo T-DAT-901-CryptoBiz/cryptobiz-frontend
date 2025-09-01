@@ -14,9 +14,9 @@
     <div v-else class="space-y-2">
       <div v-for="r in rows" :key="r.symbol" class="p-3 rounded-xl bg-white/5">
         <div class="flex items-center justify-between text-sm">
-          <NuxtLink :to="`/asset/${r.symbol}`" class="font-medium hover:underline">{{
-            r.symbol
-          }}</NuxtLink>
+          <NuxtLink :to="`/asset/${r.symbol}`" class="font-medium hover:underline"
+            >{{ r.symbol }}
+          </NuxtLink>
           <span class="text-white/60">Spread: {{ r.spread.toFixed(3) }}%</span>
         </div>
         <div class="mt-2 grid grid-cols-2 gap-3 text-xs tabular-nums">
@@ -35,6 +35,9 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+
 const symbols = ['BTCUSDT', 'ETHUSDT']
 const { orderBook } = useBinanceMarket()
 

@@ -26,6 +26,10 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useAll24h } from '~/composables/useAll24h'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+
 const { rows, pending } = useAll24h()
 const { exchangeInfo } = useBinanceMarket()
 

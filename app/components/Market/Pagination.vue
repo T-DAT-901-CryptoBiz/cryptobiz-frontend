@@ -31,6 +31,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 const props = withDefaults(defineProps<{ page: number; total: number; perPage: number }>(), {
   page: 1,
   total: 0,

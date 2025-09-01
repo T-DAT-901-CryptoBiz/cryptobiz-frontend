@@ -3,6 +3,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAll24h } from '~/composables/useAll24h'
+
 const { rows, pending } = useAll24h()
 const items = computed(() =>
   [...rows.value]

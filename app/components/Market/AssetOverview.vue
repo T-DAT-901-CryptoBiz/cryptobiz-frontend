@@ -109,6 +109,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useTicker } from '~/composables/useTicker'
+import { useAll24h } from '~/composables/useAll24h'
+import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
+
 const props = defineProps<{ symbol: string }>()
 const base = computed(() => props.symbol.replace(/(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/, ''))
 

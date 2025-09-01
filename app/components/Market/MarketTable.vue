@@ -51,7 +51,11 @@
 </template>
 
 <script setup lang="ts">
-import type { Interval } from '~/types/binance'
+import { onMounted, ref, computed } from 'vue'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import { useKlines } from '~/composables/useKlines'
+import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
+import type { Interval, Ticker24h } from '~/types/binance'
 
 const props = withDefaults(
   defineProps<{
@@ -67,7 +71,9 @@ const props = withDefaults(
 )
 
 const { universe } = useSymbolsUniverse()
-const list = computed(() => (props.symbols?.length ? props.symbols : universe).slice(0, props.rows))
+const list = computed(() =>
+  (props.symbols?.length ? props.symbols : universe.value).slice(0, props.rows),
+)
 
 const { ticker24h } = useBinanceMarket()
 
@@ -85,9 +91,14 @@ const data = ref<Row[]>([])
 
 const fetchRow = async (sym: string): Promise<Row> => {
   const t = await ticker24h(sym)
-  const r = t.data.value as any
+  const v = t.data.value
+  const r = (Array.isArray(v) ? v.find((x) => (x as Ticker24h).symbol === sym) : v) as
+    | Ticker24h
+    | undefined
+
   const { candles, refresh } = useKlines(sym, props.interval, 7 * 24)
   await refresh()
+
   return {
     symbol: sym,
     price: Number(r?.lastPrice ?? 0),

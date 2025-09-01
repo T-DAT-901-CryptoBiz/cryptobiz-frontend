@@ -23,6 +23,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+
 const props = withDefaults(defineProps<{ asset: string; size?: number; rounded?: boolean }>(), {
   size: 20,
   rounded: true,
