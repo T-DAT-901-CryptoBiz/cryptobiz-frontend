@@ -47,32 +47,6 @@
               <span v-else class="inline-block h-5 w-28 rounded bg-white/10 animate-pulse"></span>
             </div>
           </div>
-
-          <div class="hidden md:flex items-center gap-4 text-sm">
-            <div class="text-right">
-              <div class="text-white/60">High 24h</div>
-              <div class="tabular-nums">
-                <span v-if="!pending">${{ high.toLocaleString() }}</span>
-                <span v-else class="inline-block h-4 w-20 rounded bg-white/10 animate-pulse"></span>
-              </div>
-            </div>
-            <div class="h-8 w-px bg-white/10" />
-            <div class="text-right">
-              <div class="text-white/60">Low 24h</div>
-              <div class="tabular-nums">
-                <span v-if="!pending">${{ low.toLocaleString() }}</span>
-                <span v-else class="inline-block h-4 w-20 rounded bg-white/10 animate-pulse"></span>
-              </div>
-            </div>
-            <div class="h-8 w-px bg-white/10" />
-            <div class="text-right">
-              <div class="text-white/60">Volume 24h</div>
-              <div class="tabular-nums">
-                <span v-if="!pending">${{ Math.round(vol).toLocaleString() }}</span>
-                <span v-else class="inline-block h-4 w-24 rounded bg-white/10 animate-pulse"></span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -98,16 +72,12 @@
             <MarketCommunity :symbol="symbol" />
           </ClientOnly>
         </div>
-        <MarketBidAsk :symbol="symbol" :height="160" />
       </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-      <MarketPerformanceChips class="lg:col-span-2 h-full" :symbol="symbol" :height="400" />
-
-      <div class="space-y-6 flex flex-col">
-        <MarketVolumeSplit class="flex-1" :symbol="symbol" :window="400" />
-      </div>
+      <MarketPerformanceChips class="lg:col-span-2 h-full" :symbol="symbol" :height="300" />
+      <MarketBidAsk :symbol="symbol" :height="350" />
     </div>
 
     <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">

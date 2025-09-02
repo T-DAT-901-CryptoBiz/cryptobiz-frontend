@@ -1,5 +1,6 @@
 <template>
   <aside class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
+    <!-- Header -->
     <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <span
@@ -56,11 +57,13 @@
       </div>
     </div>
 
+    <!-- Scrollable list -->
     <div
       ref="scrollWrap"
       class="p-3 max-h-[460px] overflow-y-auto pr-1 custom-scroll"
-      :aria-busy="pending || loadingMore"
+      :aria-busy="(pending && !posts.length) || showMoreSpinner"
     >
+      <!-- Skeletons -->
       <div v-if="pending && !posts.length" class="space-y-2">
         <div v-for="i in 5" :key="i" class="flex gap-3 p-3 rounded-lg bg-white/5">
           <div class="h-10 w-10 rounded-full bg-white/10 animate-pulse" />
@@ -72,6 +75,7 @@
         </div>
       </div>
 
+      <!-- Posts -->
       <ul v-else class="space-y-2">
         <li v-for="p in visiblePosts" :key="p.id">
           <a
@@ -139,7 +143,8 @@
           </a>
         </li>
 
-        <li v-if="loadingMore" class="py-3">
+        <!-- Loader + sentinel (affichés uniquement si on peut paginer) -->
+        <li v-if="showMoreSpinner" class="py-3">
           <div class="flex items-center justify-center gap-2 text-xs text-white/70">
             <div
               class="h-5 w-5 rounded-full border-2 border-white/30 border-t-transparent animate-spin"
@@ -147,10 +152,35 @@
             Loading more…
           </div>
         </li>
-        <li ref="sentinel" class="h-1" aria-hidden="true" />
+        <li v-if="canPaginate" ref="sentinel" class="h-1" aria-hidden="true" />
       </ul>
 
-      <div v-if="!pending && !posts.length" class="text-sm text-white/60">Aucun post trouvé.</div>
+      <!-- Empty state -->
+      <div v-if="!pending && !posts.length" class="p-6 text-center">
+        <div
+          class="mx-auto h-11 w-11 rounded-xl bg-white/5 ring-1 ring-white/10 grid place-items-center"
+        >
+          <Icon name="lucide:message-square-off" class="h-5 w-5 text-white/70" />
+        </div>
+        <div class="mt-3 font-medium">Nothing here yet</div>
+        <p class="mt-1 text-xs text-white/60">
+          Try changing the filter or time period to see more posts.
+        </p>
+        <div class="mt-3 flex items-center justify-center gap-2">
+          <button
+            @click="refreshFeed"
+            class="px-3 py-1.5 text-xs rounded-md bg-white/10 hover:bg-white/15 ring-1 ring-white/10"
+          >
+            Refresh
+          </button>
+          <button
+            @click="toggleSegment"
+            class="px-3 py-1.5 text-xs rounded-md bg-white/5 hover:bg-white/10 ring-1 ring-white/10 text-white/80"
+          >
+            Switch to {{ segment === 'top' ? 'Latest' : 'Top' }}
+          </button>
+        </div>
+      </div>
     </div>
   </aside>
 </template>
@@ -168,6 +198,16 @@ const props = withDefaults(defineProps<{ symbol: string; loaderDelayMs?: number 
   loaderDelayMs: 2000,
 })
 
+const refreshFeed = () => {
+  feed.value?.refresh?.()
+}
+
+const toggleSegment = () => {
+  segment.value = segment.value === 'top' ? 'latest' : 'top'
+  visible.value = 5
+}
+
+/* Subreddits */
 const base = computed(() =>
   String(props.symbol || '').replace(/(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/i, ''),
 )
@@ -196,6 +236,14 @@ const SUBS: Record<string, string[]> = {
   FIL: ['Filecoin'],
   APT: ['aptos'],
   SUI: ['SuiNetwork'],
+  XLM: ['Stellar'],
+  VET: ['vechain'],
+  QTUM: ['Qtum'],
+  NEO: ['NEO'],
+  IOTA: ['IOTA'],
+  ONT: ['Ontology'],
+  ICX: ['iconproject'],
+  TUSD: ['TrueUSD'],
 }
 const usedSubs = computed<string[]>(() => {
   const preset = SUBS[baseU.value]
@@ -204,6 +252,7 @@ const usedSubs = computed<string[]>(() => {
   return [guess, `${guess}crypto`, 'CryptoCurrency', 'CryptoMarkets']
 })
 
+/* Segments */
 type Segment = 'top' | 'latest'
 const segments: Array<{ label: string; value: Segment }> = [
   { label: 'Top', value: 'top' },
@@ -212,6 +261,7 @@ const segments: Array<{ label: string; value: Segment }> = [
 const segment = ref<Segment>('latest')
 const t = ref<TimeRange>('day')
 
+/* Feed */
 const fetchLimit = ref(20)
 type Feed = ReturnType<typeof useRedditPublic> | null
 const feed = shallowRef<Feed>(null)
@@ -232,11 +282,15 @@ function mountFeed() {
 }
 watch([usedSubs, segment, t, fetchLimit], () => mountFeed(), { immediate: true })
 
+/* Pagination + guards */
 const visible = ref(5)
 const visiblePosts = computed(() => posts.value.slice(0, visible.value))
 
 const loadingMore = ref(false)
+const canPaginate = computed(() => posts.value.length > 1)
+const showMoreSpinner = computed(() => loadingMore.value && canPaginate.value)
 
+/* Scroll infra (sans globals) */
 type ScrollEl = {
   scrollTop: number
   clientHeight: number
@@ -247,7 +301,6 @@ type ScrollEl = {
     opts?: { passive?: boolean },
   ) => void
   removeEventListener: (type: string, listener: (e: unknown) => void) => void
-  getBoundingClientRect?: () => { left: number; top: number; width: number; height: number }
 }
 const scrollWrap = ref<ScrollEl | null>(null)
 const sentinel = ref<unknown | null>(null)
@@ -272,8 +325,10 @@ function sleep(ms: number) {
     g.setTimeout?.(resolve, ms)
   })
 }
+
 async function loadMore() {
   if (loadingMore.value) return
+  if (!canPaginate.value) return
   const wrap = scrollWrap.value
   if (!wrap || !isAtHardBottom(wrap)) return
 
@@ -293,7 +348,7 @@ async function loadMore() {
           stop()
           loadingMore.value = false
           await nextTick()
-          if (io && sentinel.value) io.observe(sentinel.value)
+          if (io && sentinel.value && canPaginate.value) io.observe(sentinel.value)
         }
       },
       { immediate: true },
@@ -301,7 +356,7 @@ async function loadMore() {
   } else {
     loadingMore.value = false
     await nextTick()
-    if (io && sentinel.value) io.observe(sentinel.value)
+    if (io && sentinel.value && canPaginate.value) io.observe(sentinel.value)
   }
 }
 
@@ -313,14 +368,10 @@ onMounted(async () => {
         const e = entries[0]
         if (e && e.isIntersecting && (e.intersectionRatio ?? 1) >= 0.98) loadMore()
       },
-      {
-        root: scrollWrap.value || null,
-        rootMargin: '0px',
-        threshold: 0.98,
-      },
+      { root: scrollWrap.value || null, rootMargin: '0px', threshold: 0.98 },
     )
     await nextTick()
-    if (sentinel.value) io.observe(sentinel.value)
+    if (sentinel.value && canPaginate.value) io.observe(sentinel.value)
   }
 
   const onScroll = () => {
@@ -333,6 +384,7 @@ onMounted(async () => {
     scrollWrap.value?.removeEventListener('scroll', onScroll)
   })
 })
+
 onBeforeUnmount(() => {
   if (io) {
     io.disconnect()
@@ -340,11 +392,15 @@ onBeforeUnmount(() => {
   }
 })
 
-watch([sentinel, () => posts.value.length], async () => {
+watch([sentinel, () => posts.value.length, canPaginate], async () => {
   await nextTick()
-  if (io && sentinel.value) io.observe(sentinel.value)
+  if (io) {
+    if (sentinel.value && canPaginate.value) io.observe(sentinel.value)
+    else if (sentinel.value) io.unobserve(sentinel.value)
+  }
 })
 
+/* UI helpers */
 function timeAgo(epochSec: number): string {
   const diff = Math.max(0, Date.now() - epochSec * 1000)
   const mins = Math.floor(diff / 60000)
