@@ -92,14 +92,22 @@
       </div>
 
       <div class="space-y-6">
-        <MarketAssetOverview :symbol="symbol" />
+        <div class="grid grid-cols-2 gap-6">
+          <MarketAssetOverview :symbol="symbol" />
+          <ClientOnly>
+            <MarketCommunity :symbol="symbol" />
+          </ClientOnly>
+        </div>
         <MarketBidAsk :symbol="symbol" :height="160" />
       </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
       <MarketPerformanceChips class="lg:col-span-2 h-full" :symbol="symbol" :height="400" />
-      <MarketVolumeSplit :symbol="symbol" :window="400" />
+
+      <div class="space-y-6 flex flex-col">
+        <MarketVolumeSplit class="flex-1" :symbol="symbol" :window="400" />
+      </div>
     </div>
 
     <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">

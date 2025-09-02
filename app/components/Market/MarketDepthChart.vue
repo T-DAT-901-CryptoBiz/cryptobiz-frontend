@@ -238,8 +238,8 @@ async function seed() {
 
 function apply(map: Map<number, number>, arr: StrPair[]) {
   for (const [ps, qs] of arr) {
-    const p = Number(ps),
-      q = Number(qs)
+    const p = Number(ps)
+    const q = Number(qs)
     if (!Number.isFinite(p)) continue
     if (!Number.isFinite(q) || q === 0) map.delete(p)
     else map.set(p, q)
@@ -247,24 +247,24 @@ function apply(map: Map<number, number>, arr: StrPair[]) {
 }
 
 let stop: (() => void) | null = null
-let timer: ReturnType<typeof setInterval> | null = null
+let timer: ReturnType<typeof globalThis.setInterval> | null = null
 let dirty = false
 
 function open() {
   if (import.meta.server) return
   stop?.()
-  if (timer) clearInterval(timer)
+  if (timer) globalThis.clearInterval(timer)
   const path = `${props.symbol.toLowerCase()}@depth@100ms`
   stop = connect(path, {
-    onMessage: (m: unknown) => {
-      if (!isDiff(m)) return
-      if (m.a) apply(asksMap, m.a)
-      if (m.b) apply(bidsMap, m.b)
+    onMessage: (msg: unknown) => {
+      if (!isDiff(msg)) return
+      if (msg.a) apply(asksMap, msg.a)
+      if (msg.b) apply(bidsMap, msg.b)
       dirty = true
       pending.value = false
     },
   })
-  timer = setInterval(
+  timer = globalThis.setInterval(
     () => {
       if (dirty) {
         rebuild(false)
@@ -281,7 +281,7 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => {
   stop?.()
-  if (timer) clearInterval(timer)
+  if (timer) globalThis.clearInterval(timer)
 })
 watch(
   () => [props.symbol, props.windowPct, props.buckets, props.cadenceMs],
@@ -291,12 +291,12 @@ watch(
   },
 )
 
-const svgW = 680,
-  svgH = 220
-const padL = 42,
-  padR = 64,
-  padT = 24,
-  padB = 24
+const svgW = 680
+const svgH = 220
+const padL = 42
+const padR = 64
+const padT = 24
+const padB = 24
 
 const bestBid = computed(() => {
   let max = -Infinity
@@ -309,8 +309,8 @@ const bestAsk = computed(() => {
   return Number.isFinite(min) ? min : NaN
 })
 const midPrice = computed(() => {
-  const b = bestBid.value,
-    a = bestAsk.value
+  const b = bestBid.value
+  const a = bestAsk.value
   return Number.isFinite(b) && Number.isFinite(a) ? (a + b) / 2 : NaN
 })
 
@@ -336,9 +336,9 @@ function buildSide(map: Map<number, number>, side: 'bid' | 'ask'): Pair[] {
   const buckets = Math.max(10, Math.floor(props.buckets))
   const out = new Array<number>(buckets).fill(0)
   if (side === 'bid') {
-    const left = xMin.value,
-      span = Math.max(m - left, 1e-9),
-      bw = span / buckets
+    const left = xMin.value
+    const span = Math.max(m - left, 1e-9)
+    const bw = span / buckets
     for (const [p, q] of map) {
       if (p > m || p < left || q <= 0) continue
       const idx = Math.min(buckets - 1, Math.floor((m - p) / bw))
@@ -353,9 +353,9 @@ function buildSide(map: Map<number, number>, side: 'bid' | 'ask'): Pair[] {
     }
     return pts
   } else {
-    const right = xMax.value,
-      span = Math.max(right - m, 1e-9),
-      bw = span / buckets
+    const right = xMax.value
+    const span = Math.max(right - m, 1e-9)
+    const bw = span / buckets
     for (const [p, q] of map) {
       if (p < m || p > right || q <= 0) continue
       const idx = Math.min(buckets - 1, Math.floor((p - m) / bw))
@@ -387,9 +387,8 @@ const maxYRaw = computed(() => {
 })
 
 function sx(x: number) {
-  const m = midPrice.value
-  const left = xMin.value,
-    right = xMax.value
+  const left = xMin.value
+  const right = xMax.value
   const span = Math.max(right - left, 1e-12)
   return padL + ((x - left) / span) * (svgW - padL - padR)
 }

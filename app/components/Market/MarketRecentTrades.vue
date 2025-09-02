@@ -4,7 +4,13 @@
     :style="{ height: height + 'px' }"
   >
     <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-      <h3 class="font-semibold">Recent Trades</h3>
+      <div class="flex items-center gap-2">
+        <h3 class="font-semibold">Recent Trades</h3>
+        <span class="inline-flex items-center gap-1">
+          <span class="h-2 w-2 rounded-full bg-emerald-400/70"></span>
+          <span class="text-xs text-white/50">live</span>
+        </span>
+      </div>
       <div class="text-xs text-white/50">Last {{ limit }}</div>
     </div>
 
