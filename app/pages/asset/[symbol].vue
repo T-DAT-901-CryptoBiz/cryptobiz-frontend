@@ -173,8 +173,4 @@ watch(() => symbol.value, openMiniTicker)
 const price = computed(() => livePrice.value ?? Number(t.value?.lastPrice ?? 0))
 const change = computed(() => liveChange.value ?? Number(t.value?.priceChangePercent ?? 0))
 const isUp = computed(() => change.value >= 0)
-
-const high = computed(() => Number(t.value?.highPrice ?? 0))
-const low = computed(() => Number(t.value?.lowPrice ?? 0))
-const vol = computed(() => Number(t.value?.quoteVolume ?? 0))
 </script>

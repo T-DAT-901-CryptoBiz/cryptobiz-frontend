@@ -266,7 +266,7 @@ async function copyPrice(v: number) {
     }
     await g.navigator?.clipboard?.writeText(String(n))
   } catch {
-    /* noop */
+    // ignore
   }
 }
 </script>
