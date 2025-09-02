@@ -1,77 +1,115 @@
 <template>
-  <div class="rounded-2xl bg-neutral-900/60 border border-white/5 p-4">
-    <div class="mb-3 text-sm text-white/60">Realtime Microstructure</div>
-
-    <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
-      <div class="rounded-xl border border-white/10 p-3 bg-white/5">
-        <div class="text-white/60 text-xs mb-0.5">Spread</div>
-        <div class="text-xl font-semibold tabular-nums">
-          <span v-if="!loading">${{ spreadAbs.toLocaleString() }}</span>
-          <span v-else class="inline-block h-5 w-20 rounded bg-white/10 animate-pulse" />
-        </div>
-        <div class="text-xs text-white/50 tabular-nums">
-          <span v-if="!loading">{{ spreadBps.toFixed(2) }} bps</span>
-          <span v-else class="inline-block h-3 w-14 rounded bg-white/10 animate-pulse" />
-        </div>
-      </div>
-
-      <div class="rounded-xl border border-white/10 p-3 bg-white/5">
-        <div class="text-white/60 text-xs mb-0.5">Order Imbalance (Top)</div>
-        <div
-          class="text-xl font-semibold tabular-nums"
-          :class="imbalance >= 0 ? 'text-green-300' : 'text-red-300'"
-        >
-          <span v-if="!loading">{{ (imbalance * 100).toFixed(1) }}%</span>
-          <span v-else class="inline-block h-5 w-16 rounded bg-white/10 animate-pulse" />
-        </div>
-        <div class="text-xs text-white/50">
-          {{ bidQty.toLocaleString() }} vs {{ askQty.toLocaleString() }}
-        </div>
-      </div>
-
-      <div class="rounded-xl border border-white/10 p-3 bg-white/5">
-        <div class="text-white/60 text-xs mb-0.5">Trades / min</div>
-        <div class="text-xl font-semibold tabular-nums">
-          <span v-if="!loading">{{ tradesPerMin.toFixed(1) }}</span>
-          <span v-else class="inline-block h-5 w-14 rounded bg-white/10 animate-pulse" />
-        </div>
-        <div class="text-xs text-white/50">last 60s window</div>
-      </div>
-
-      <div class="rounded-xl border border-white/10 p-3 bg-white/5">
-        <div class="text-white/60 text-xs mb-0.5">Avg Trade Size ($)</div>
-        <div class="text-xl font-semibold tabular-nums">
-          <span v-if="!loading">${{ avgTradeUsd.toLocaleString() }}</span>
-          <span v-else class="inline-block h-5 w-24 rounded bg-white/10 animate-pulse" />
-        </div>
-        <div class="text-xs text-white/50">last 60s window</div>
-      </div>
-
-      <div class="rounded-xl border border-white/10 p-3 bg-white/5">
-        <div class="text-white/60 text-xs mb-0.5">VWAP(24h) Deviation</div>
-        <div
-          class="text-xl font-semibold tabular-nums"
-          :class="vwapDev >= 0 ? 'text-green-300' : 'text-red-300'"
-        >
-          <span v-if="!loading">{{ vwapDev.toFixed(2) }}%</span>
-          <span v-else class="inline-block h-5 w-20 rounded bg-white/10 animate-pulse" />
-        </div>
-        <div class="text-xs text-white/50">price vs (quoteVol/baseVol)</div>
-      </div>
-
-      <div class="rounded-xl border border-white/10 p-3 bg-white/5">
-        <div class="text-white/60 text-xs mb-0.5">From 24h High</div>
-        <div
-          class="text-xl font-semibold tabular-nums"
-          :class="fromHigh <= 0 ? 'text-red-300' : 'text-green-300'"
-        >
-          <span v-if="!loading">{{ fromHigh.toFixed(2) }}%</span>
-          <span v-else class="inline-block h-5 w-16 rounded bg-white/10 animate-pulse" />
-        </div>
-        <div class="text-xs text-white/50">high: ${{ high24h.toLocaleString() }}</div>
+  <aside class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
+    <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+      <h3 class="font-semibold">Realtime Microstructure</h3>
+      <div class="text-xs text-white/60 whitespace-nowrap">
+        <span v-if="loading" class="inline-flex items-center gap-1">
+          <span class="h-2 w-2 rounded-full bg-white/40 animate-pulse"></span> syncing…
+        </span>
+        <span v-else class="inline-flex items-center gap-2">
+          <span class="inline-block h-2 w-2 rounded-full bg-emerald-400/70"></span> live
+        </span>
       </div>
     </div>
-  </div>
+
+    <div class="p-4">
+      <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-[1fr]">
+        <div
+          class="h-full rounded-xl border border-white/10 p-3 bg-white/5 flex flex-col justify-between"
+        >
+          <div class="text-white/60 text-xs mb-0.5">Spread</div>
+          <div class="space-y-0.5">
+            <div class="text-xl font-semibold tabular-nums whitespace-nowrap">
+              <span v-if="!loading">${{ spreadAbs.toLocaleString() }}</span>
+              <span v-else class="inline-block h-5 w-24 rounded bg-white/10 animate-pulse" />
+            </div>
+            <div class="text-xs text-white/50 tabular-nums whitespace-nowrap">
+              <span v-if="!loading">{{ spreadBps.toFixed(2) }} bps</span>
+              <span v-else class="inline-block h-3 w-16 rounded bg-white/10 animate-pulse" />
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="h-full rounded-xl border border-white/10 p-3 bg-white/5 flex flex-col justify-between"
+        >
+          <div class="text-white/60 text-xs mb-0.5">Order Imbalance (Top)</div>
+          <div class="space-y-0.5">
+            <div
+              class="text-xl font-semibold tabular-nums whitespace-nowrap"
+              :class="imbalance >= 0 ? 'text-green-300' : 'text-red-300'"
+            >
+              <span v-if="!loading">{{ (imbalance * 100).toFixed(1) }}%</span>
+              <span v-else class="inline-block h-5 w-20 rounded bg-white/10 animate-pulse" />
+            </div>
+            <div class="text-xs text-white/50 whitespace-nowrap">
+              {{ bidQty.toLocaleString() }} vs {{ askQty.toLocaleString() }}
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="h-full rounded-xl border border-white/10 p-3 bg-white/5 flex flex-col justify-between"
+        >
+          <div class="text-white/60 text-xs mb-0.5">Trades / min</div>
+          <div class="space-y-0.5">
+            <div class="text-xl font-semibold tabular-nums whitespace-nowrap">
+              <span v-if="!loading">{{ tradesPerMin.toFixed(1) }}</span>
+              <span v-else class="inline-block h-5 w-16 rounded bg-white/10 animate-pulse" />
+            </div>
+            <div class="text-xs text-white/50">last 60s window</div>
+          </div>
+        </div>
+
+        <div
+          class="h-full rounded-xl border border-white/10 p-3 bg-white/5 flex flex-col justify-between"
+        >
+          <div class="text-white/60 text-xs mb-0.5">Avg Trade Size ($)</div>
+          <div class="space-y-0.5">
+            <div class="text-xl font-semibold tabular-nums whitespace-nowrap">
+              <span v-if="!loading">${{ avgTradeUsd.toLocaleString() }}</span>
+              <span v-else class="inline-block h-5 w-28 rounded bg-white/10 animate-pulse" />
+            </div>
+            <div class="text-xs text-white/50">last 60s window</div>
+          </div>
+        </div>
+
+        <div
+          class="h-full rounded-xl border border-white/10 p-3 bg-white/5 flex flex-col justify-between"
+        >
+          <div class="text-white/60 text-xs mb-0.5">VWAP(24h) Deviation</div>
+          <div class="space-y-0.5">
+            <div
+              class="text-xl font-semibold tabular-nums whitespace-nowrap"
+              :class="vwapDev >= 0 ? 'text-green-300' : 'text-red-300'"
+            >
+              <span v-if="!loading">{{ vwapDev.toFixed(2) }}%</span>
+              <span v-else class="inline-block h-5 w-20 rounded bg-white/10 animate-pulse" />
+            </div>
+            <div class="text-xs text-white/50 whitespace-nowrap">price vs (quoteVol/baseVol)</div>
+          </div>
+        </div>
+
+        <div
+          class="h-full rounded-xl border border-white/10 p-3 bg-white/5 flex flex-col justify-between"
+        >
+          <div class="text-white/60 text-xs mb-0.5">From 24h High</div>
+          <div class="space-y-0.5">
+            <div
+              class="text-xl font-semibold tabular-nums whitespace-nowrap"
+              :class="fromHigh <= 0 ? 'text-red-300' : 'text-green-300'"
+            >
+              <span v-if="!loading">{{ fromHigh.toFixed(2) }}%</span>
+              <span v-else class="inline-block h-5 w-16 rounded bg-white/10 animate-pulse" />
+            </div>
+            <div class="text-xs text-white/50 whitespace-nowrap">
+              high: ${{ high24h.toLocaleString() }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
 </template>
 
 <script setup lang="ts">
@@ -86,31 +124,19 @@ type TradeWS = { t: number; p: string; q: string; T: number }
 type MiniTickerWS = { c: string }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
-
-const isBook = (x: unknown): x is BookTickerWS => {
-  if (!isObj(x)) return false
-  return (
-    typeof x.b === 'string' &&
-    typeof x.a === 'string' &&
-    typeof x.B === 'string' &&
-    typeof x.A === 'string'
-  )
-}
-
-const isTrade = (x: unknown): x is TradeWS => {
-  if (!isObj(x)) return false
-  return (
-    typeof x.p === 'string' &&
-    typeof x.q === 'string' &&
-    typeof x.t === 'number' &&
-    typeof x.T === 'number'
-  )
-}
-
-const isMini = (x: unknown): x is MiniTickerWS => {
-  if (!isObj(x)) return false
-  return typeof x.c === 'string'
-}
+const isBook = (x: unknown): x is BookTickerWS =>
+  isObj(x) &&
+  typeof x.b === 'string' &&
+  typeof x.a === 'string' &&
+  typeof x.B === 'string' &&
+  typeof x.A === 'string'
+const isTrade = (x: unknown): x is TradeWS =>
+  isObj(x) &&
+  typeof x.p === 'string' &&
+  typeof x.q === 'string' &&
+  typeof x.t === 'number' &&
+  typeof x.T === 'number'
+const isMini = (x: unknown): x is MiniTickerWS => isObj(x) && typeof x.c === 'string'
 
 const { connect } = useBinanceWS()
 const { data: t } = useTicker(props.symbol)
@@ -178,15 +204,10 @@ const baseVol = computed(() => Number(t.value?.volume ?? 0))
 const quoteVol = computed(() => Number(t.value?.quoteVolume ?? 0))
 
 const spreadAbs = computed(() => Math.max(0, ask.value - bid.value))
-const spreadBps = computed(() => {
-  const mid = (ask.value + bid.value) / 2 || 1
-  return (spreadAbs.value / mid) * 10_000
-})
+const spreadBps = computed(() => (spreadAbs.value / ((ask.value + bid.value) / 2 || 1)) * 10_000)
 const imbalance = computed(() => {
-  const b = bidQty.value
-  const a = askQty.value
-  const den = b + a || 1
-  return (b - a) / den
+  const den = bidQty.value + askQty.value || 1
+  return (bidQty.value - askQty.value) / den
 })
 
 const tradeCount = ref(0)
@@ -197,7 +218,6 @@ const vwap24h = computed(() => (baseVol.value > 0 ? quoteVol.value / baseVol.val
 const vwapDev = computed(() =>
   vwap24h.value > 0 ? ((priceNow.value || 0) / vwap24h.value - 1) * 100 : 0,
 )
-
 const fromHigh = computed(() => {
   const h = high24h.value || 0
   const p = priceNow.value || 0

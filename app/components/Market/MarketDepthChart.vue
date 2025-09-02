@@ -6,15 +6,18 @@
     <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <h3 class="font-semibold">Depth (Cumulative)</h3>
-        <span class="text-xs text-white/50">live</span>
+        <span class="inline-flex items-center gap-1">
+          <span class="h-2 w-2 rounded-full bg-emerald-400/70"></span>
+          <span class="text-xs text-white/50">live</span>
+        </span>
       </div>
       <div class="flex items-center gap-4 text-xs text-white/60">
-        <span class="inline-flex items-center gap-1">
-          <span class="h-2 w-2 rounded-full bg-emerald-400/70"></span> Bids
-        </span>
-        <span class="inline-flex items-center gap-1">
-          <span class="h-2 w-2 rounded-full bg-rose-400/70"></span> Asks
-        </span>
+        <span class="inline-flex items-center gap-1"
+          ><span class="h-2 w-2 rounded-full bg-emerald-400/70"></span> Bids</span
+        >
+        <span class="inline-flex items-center gap-1"
+          ><span class="h-2 w-2 rounded-full bg-rose-400/70"></span> Asks</span
+        >
         <span class="opacity-60">{{ asks.length + bids.length }} pts</span>
       </div>
     </div>
@@ -68,14 +71,14 @@
             :x2="midXView"
             :y1="padT"
             :y2="svgH - padB"
-            stroke="rgba(255,255,255,0.12)"
+            stroke="rgba(255,255,255,0.18)"
             stroke-dasharray="4 3"
             stroke-width="1"
           />
           <rect
-            :x="midXView - 40"
+            :x="midXView - 44"
             :y="padT - 18"
-            width="80"
+            width="88"
             height="16"
             rx="3"
             fill="rgba(255,255,255,0.06)"
@@ -92,24 +95,24 @@
         </g>
 
         <path
-          :d="areaPath(bids)"
+          :d="stepAreaPath(bids)"
           fill="url(#gradBid)"
-          stroke="rgba(16,185,129,0.6)"
+          stroke="rgba(16,185,129,0.65)"
           stroke-width="1.2"
         />
         <path
-          :d="areaPath(asks)"
+          :d="stepAreaPath(asks)"
           fill="url(#gradAsk)"
-          stroke="rgba(239,68,68,0.6)"
+          stroke="rgba(239,68,68,0.65)"
           stroke-width="1.2"
         />
 
         <g font-size="10" fill="rgba(255,255,255,0.55)">
-          <text :x="padL" :y="svgH - 4">{{ money(minXRaw) }}</text>
+          <text :x="padL" :y="svgH - 4">{{ money(xMin) }}</text>
           <text :x="(padL + (svgW - padR)) / 2" :y="svgH - 4" text-anchor="middle">
-            {{ money((minXRaw + maxXRaw) / 2) }}
+            {{ money(midPrice) }}
           </text>
-          <text :x="svgW - padR" :y="svgH - 4" text-anchor="end">{{ money(maxXRaw) }}</text>
+          <text :x="svgW - padR" :y="svgH - 4" text-anchor="end">{{ money(xMax) }}</text>
         </g>
 
         <g v-if="hover" pointer-events="none">
@@ -128,27 +131,27 @@
             :fill="hover.side === 'bid' ? 'rgb(16 185 129)' : 'rgb(239 68 68)'"
           />
           <rect
-            :x="Math.min(Math.max(hover.x + 8, padL), svgW - padR - 140)"
-            :y="Math.max(hover.y - 32, padT + 2)"
-            width="140"
-            height="28"
+            :x="Math.min(Math.max(hover.x + 8, padL), svgW - padR - 150)"
+            :y="Math.max(hover.y - 34, padT + 2)"
+            width="150"
+            height="30"
             rx="6"
             fill="rgba(0,0,0,0.55)"
             stroke="rgba(255,255,255,0.08)"
           />
           <text
-            :x="Math.min(Math.max(hover.x + 16, padL + 8), svgW - padR - 124)"
-            :y="Math.max(hover.y - 14, padT + 14)"
+            :x="Math.min(Math.max(hover.x + 16, padL + 8), svgW - padR - 132)"
+            :y="Math.max(hover.y - 16, padT + 14)"
             font-size="11"
             fill="white"
           >
             {{ money(hover.price) }}
           </text>
           <text
-            :x="Math.min(Math.max(hover.x + 16, padL + 8), svgW - padR - 124)"
+            :x="Math.min(Math.max(hover.x + 16, padL + 8), svgW - padR - 132)"
             :y="Math.max(hover.y, padT + 24)"
             font-size="10"
-            fill="rgba(255,255,255,0.7)"
+            fill="rgba(255,255,255,0.75)"
           >
             Cum: {{ qty(hover.qty) }}
           </text>
@@ -163,12 +166,12 @@
     >
       <div>Totals</div>
       <div class="flex items-center gap-4 tabular-nums">
-        <span class="inline-flex items-center gap-1">
-          <span class="h-2 w-2 rounded-full bg-emerald-400/70"></span> {{ qty(totalBid) }}
-        </span>
-        <span class="inline-flex items-center gap-1">
-          <span class="h-2 w-2 rounded-full bg-rose-400/70"></span> {{ qty(totalAsk) }}
-        </span>
+        <span class="inline-flex items-center gap-1"
+          ><span class="h-2 w-2 rounded-full bg-emerald-400/70"></span> {{ qty(totalBid) }}</span
+        >
+        <span class="inline-flex items-center gap-1"
+          ><span class="h-2 w-2 rounded-full bg-rose-400/70"></span> {{ qty(totalAsk) }}</span
+        >
       </div>
     </div>
   </div>
@@ -179,16 +182,29 @@ import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue'
 import { useBinanceWS } from '~/composables/useBinanceWS'
 import { useBinanceMarket } from '~/composables/useBinanceMarket'
 
-const props = withDefaults(defineProps<{ symbol: string; limit?: number; height?: number }>(), {
-  limit: 50,
-  height: 260,
-})
-
-const { orderBook } = useBinanceMarket()
-const { connect } = useBinanceWS()
+const props = withDefaults(
+  defineProps<{
+    symbol: string
+    height?: number
+    windowPct?: number
+    cadenceMs?: number
+    buckets?: number
+  }>(),
+  {
+    height: 260,
+    windowPct: 0.25,
+    cadenceMs: 1000,
+    buckets: 80,
+  },
+)
 
 type Pair = [number, number]
 type StrPair = [string, string]
+type DepthDiffMsg = { b?: StrPair[]; a?: StrPair[] }
+type ObjRec = Record<string, unknown>
+
+const { orderBook } = useBinanceMarket()
+const { connect } = useBinanceWS()
 
 const asks = ref<Pair[]>([])
 const bids = ref<Pair[]>([])
@@ -196,157 +212,201 @@ const pending = ref(true)
 
 const chartH = computed(() => Math.max(120, (props.height ?? 260) - 44 - 40))
 
-async function seed() {
-  const r = await orderBook(props.symbol, Math.min(props.limit as number, 100))
-  const a0 = (r.data.value?.asks ?? [])
-    .slice(0, props.limit)
-    .map(([p, q]: StrPair) => [Number(p), Number(q)] as Pair)
-  const b0 = (r.data.value?.bids ?? [])
-    .slice(0, props.limit)
-    .map(([p, q]: StrPair) => [Number(p), Number(q)] as Pair)
-  asksMap.clear()
-  bidsMap.clear()
-  for (const [p, q] of a0) asksMap.set(p, q)
-  for (const [p, q] of b0) bidsMap.set(p, q)
-  rebuild()
-  pending.value = false
-}
+const asksMap = new Map<number, number>()
+const bidsMap = new Map<number, number>()
 
-type DepthPartialMsg = { bids?: StrPair[]; asks?: StrPair[] }
-type DepthDiffMsg = { b?: StrPair[]; a?: StrPair[] }
-
-type ObjRec = Record<string, unknown>
 const isObj = (x: unknown): x is ObjRec => typeof x === 'object' && x !== null
 const isStrPair = (t: unknown): t is StrPair =>
   Array.isArray(t) && t.length === 2 && typeof t[0] === 'string' && typeof t[1] === 'string'
 const isArrStrPair = (a: unknown): a is StrPair[] => Array.isArray(a) && a.every(isStrPair)
+const isDiff = (x: unknown): x is DepthDiffMsg =>
+  isObj(x) &&
+  (!('a' in x) || isArrStrPair((x as ObjRec).a)) &&
+  (!('b' in x) || isArrStrPair((x as ObjRec).b))
 
-function isPartial(x: unknown): x is DepthPartialMsg {
-  if (!isObj(x)) return false
-  if ('asks' in x && !isArrStrPair((x as ObjRec).asks)) return false
-  if ('bids' in x && !isArrStrPair((x as ObjRec).bids)) return false
-  return true
+async function seed() {
+  const r = await orderBook(props.symbol, 100)
+  const a0 = (r.data.value?.asks ?? []).map(([p, q]: StrPair) => [Number(p), Number(q)] as Pair)
+  const b0 = (r.data.value?.bids ?? []).map(([p, q]: StrPair) => [Number(p), Number(q)] as Pair)
+  asksMap.clear()
+  bidsMap.clear()
+  for (const [p, q] of a0) if (Number.isFinite(p) && Number.isFinite(q) && q > 0) asksMap.set(p, q)
+  for (const [p, q] of b0) if (Number.isFinite(p) && Number.isFinite(q) && q > 0) bidsMap.set(p, q)
+  rebuild(true)
+  pending.value = false
 }
-function isDiff(x: unknown): x is DepthDiffMsg {
-  if (!isObj(x)) return false
-  if ('a' in x && !isArrStrPair((x as ObjRec).a)) return false
-  if ('b' in x && !isArrStrPair((x as ObjRec).b)) return false
-  return true
-}
 
-const asksMap = new Map<number, number>()
-const bidsMap = new Map<number, number>()
-
-function apply(map: Map<number, number>, updates: StrPair[]) {
-  for (const [ps, qs] of updates) {
-    const p = Number(ps)
-    const q = Number(qs)
+function apply(map: Map<number, number>, arr: StrPair[]) {
+  for (const [ps, qs] of arr) {
+    const p = Number(ps),
+      q = Number(qs)
     if (!Number.isFinite(p)) continue
     if (!Number.isFinite(q) || q === 0) map.delete(p)
     else map.set(p, q)
   }
 }
 
-function rebuild() {
-  const a = [...asksMap.entries()].sort((x, y) => x[0] - y[0]).slice(0, props.limit)
-  const b = [...bidsMap.entries()].sort((x, y) => y[0] - x[0]).slice(0, props.limit)
-  asks.value = cum(
-    a.map(([p, q]) => [p, q] as Pair),
-    true,
-  )
-  bids.value = cum(
-    b.map(([p, q]) => [p, q] as Pair),
-    false,
-  )
-}
-
 let stop: (() => void) | null = null
+let timer: ReturnType<typeof setInterval> | null = null
+let dirty = false
+
 function open() {
   if (import.meta.server) return
   stop?.()
-  const usePartial = props.limit === 5 || props.limit === 10 || props.limit === 20
-  if (usePartial) {
-    const path = `${props.symbol.toLowerCase()}@depth${props.limit}@100ms`
-    stop = connect(path, {
-      onMessage: (m: unknown) => {
-        if (!isPartial(m)) return
-        if (m.asks) apply(asksMap, m.asks)
-        if (m.bids) apply(bidsMap, m.bids)
-        rebuild()
-        pending.value = false
-      },
-    })
-  } else {
-    const path = `${props.symbol.toLowerCase()}@depth@100ms`
-    stop = connect(path, {
-      onMessage: (m: unknown) => {
-        if (!isDiff(m)) return
-        if (m.a) apply(asksMap, m.a)
-        if (m.b) apply(bidsMap, m.b)
-        rebuild()
-        pending.value = false
-      },
-    })
-  }
-}
-
-function cum(arr: ReadonlyArray<Pair>, reverse: boolean): Pair[] {
-  const out = new Array<Pair>(arr.length)
-  let s = 0
-  if (reverse) {
-    for (let i = arr.length - 1; i >= 0; i--) {
-      s += arr[i][1]
-      out[i] = [arr[i][0], s]
-    }
-  } else {
-    for (let i = 0; i < arr.length; i++) {
-      s += arr[i][1]
-      out[i] = [arr[i][0], s]
-    }
-  }
-  return out
+  if (timer) clearInterval(timer)
+  const path = `${props.symbol.toLowerCase()}@depth@100ms`
+  stop = connect(path, {
+    onMessage: (m: unknown) => {
+      if (!isDiff(m)) return
+      if (m.a) apply(asksMap, m.a)
+      if (m.b) apply(bidsMap, m.b)
+      dirty = true
+      pending.value = false
+    },
+  })
+  timer = setInterval(
+    () => {
+      if (dirty) {
+        rebuild(false)
+        dirty = false
+      }
+    },
+    Math.max(250, props.cadenceMs),
+  )
 }
 
 onMounted(async () => {
   await seed()
   open()
 })
-onBeforeUnmount(() => stop?.())
+onBeforeUnmount(() => {
+  stop?.()
+  if (timer) clearInterval(timer)
+})
 watch(
-  () => [props.symbol, props.limit],
+  () => [props.symbol, props.windowPct, props.buckets, props.cadenceMs],
   async () => {
     await seed()
     open()
   },
 )
 
-const svgW = 680
-const svgH = 220
-const padL = 42
-const padR = 64
-const padT = 24
-const padB = 24
+const svgW = 680,
+  svgH = 220
+const padL = 42,
+  padR = 64,
+  padT = 24,
+  padB = 24
 
-const all = computed(() => [...asks.value, ...bids.value])
-const minXRaw = computed(() => (all.value.length ? Math.min(...all.value.map((p) => p[0])) : 0))
-const maxXRaw = computed(() => (all.value.length ? Math.max(...all.value.map((p) => p[0])) : 1))
-const maxYRaw = computed(() => (all.value.length ? Math.max(...all.value.map((p) => p[1])) : 1))
+const bestBid = computed(() => {
+  let max = -Infinity
+  for (const p of bidsMap.keys()) if (p > max) max = p
+  return Number.isFinite(max) ? max : NaN
+})
+const bestAsk = computed(() => {
+  let min = Infinity
+  for (const p of asksMap.keys()) if (p < min) min = p
+  return Number.isFinite(min) ? min : NaN
+})
+const midPrice = computed(() => {
+  const b = bestBid.value,
+    a = bestAsk.value
+  return Number.isFinite(b) && Number.isFinite(a) ? (a + b) / 2 : NaN
+})
+
+const windowAbs = computed(() => {
+  const m = midPrice.value
+  const pct = Math.max(0.01, props.windowPct) / 100
+  return Number.isFinite(m) ? m * pct : 0
+})
+const xMin = computed(() => {
+  const m = midPrice.value
+  const w = windowAbs.value
+  return Number.isFinite(m) ? m - w : 0
+})
+const xMax = computed(() => {
+  const m = midPrice.value
+  const w = windowAbs.value
+  return Number.isFinite(m) ? m + w : 1
+})
+
+function buildSide(map: Map<number, number>, side: 'bid' | 'ask'): Pair[] {
+  const m = midPrice.value
+  if (!Number.isFinite(m)) return []
+  const buckets = Math.max(10, Math.floor(props.buckets))
+  const out = new Array<number>(buckets).fill(0)
+  if (side === 'bid') {
+    const left = xMin.value,
+      span = Math.max(m - left, 1e-9),
+      bw = span / buckets
+    for (const [p, q] of map) {
+      if (p > m || p < left || q <= 0) continue
+      const idx = Math.min(buckets - 1, Math.floor((m - p) / bw))
+      out[idx] += q
+    }
+    const pts: Pair[] = []
+    let s = 0
+    for (let i = 0; i < buckets; i++) {
+      s += out[i]
+      const px = m - (i + 0.5) * (span / buckets)
+      pts.push([px, s])
+    }
+    return pts
+  } else {
+    const right = xMax.value,
+      span = Math.max(right - m, 1e-9),
+      bw = span / buckets
+    for (const [p, q] of map) {
+      if (p < m || p > right || q <= 0) continue
+      const idx = Math.min(buckets - 1, Math.floor((p - m) / bw))
+      out[idx] += q
+    }
+    const pts: Pair[] = []
+    let s = 0
+    for (let i = 0; i < buckets; i++) {
+      s += out[i]
+      const px = m + (i + 0.5) * (span / buckets)
+      pts.push([px, s])
+    }
+    return pts
+  }
+}
+
+function rebuild(initial: boolean) {
+  const a = buildSide(asksMap, 'ask')
+  const b = buildSide(bidsMap, 'bid')
+  asks.value = a
+  bids.value = b
+  if (initial && (!a.length || !b.length)) pending.value = true
+}
+
+const maxYRaw = computed(() => {
+  const ay = asks.value.length ? asks.value[asks.value.length - 1][1] : 0
+  const by = bids.value.length ? bids.value[bids.value.length - 1][1] : 0
+  return Math.max(ay, by, 1)
+})
 
 function sx(x: number) {
-  const span = Math.max(maxXRaw.value - minXRaw.value, 1e-12)
-  return padL + ((x - minXRaw.value) / span) * (svgW - padL - padR)
+  const m = midPrice.value
+  const left = xMin.value,
+    right = xMax.value
+  const span = Math.max(right - left, 1e-12)
+  return padL + ((x - left) / span) * (svgW - padL - padR)
 }
 function sy(y: number) {
   const span = Math.max(maxYRaw.value, 1e-12)
   return svgH - padB - (y / span) * (svgH - padT - padB)
 }
 
-function areaPath(pts: ReadonlyArray<Pair> | null | undefined): string {
+function stepAreaPath(pts: ReadonlyArray<Pair> | null | undefined): string {
   if (!pts || pts.length === 0) return ''
   const p = pts.map(([x, y]) => [sx(x), sy(y)] as [number, number])
-  const d: (string | number)[] = ['M', p[0][0], p[0][1]]
-  for (let i = 1; i < p.length; i++) d.push('L', p[i][0], p[i][1])
-  d.push('L', p[p.length - 1][0], svgH - padB, 'L', p[0][0], svgH - padB, 'Z')
+  const baseY = svgH - padB
+  const d: (string | number)[] = ['M', p[0][0], baseY, 'L', p[0][0], p[0][1]]
+  for (let i = 1; i < p.length; i++) {
+    d.push('L', p[i][0], p[i - 1][1], 'L', p[i][0], p[i][1])
+  }
+  d.push('L', p[p.length - 1][0], baseY, 'Z')
   return d.join(' ')
 }
 
@@ -360,13 +420,6 @@ const gridY = computed(() => {
   return out
 })
 
-const bestBid = computed(() => (bids.value.length ? bids.value[0][0] : NaN))
-const bestAsk = computed(() => (asks.value.length ? asks.value[0][0] : NaN))
-const midPrice = computed(() => {
-  const b = bestBid.value
-  const a = bestAsk.value
-  return Number.isFinite(b) && Number.isFinite(a) ? (a + b) / 2 : NaN
-})
 const midXView = computed(() => {
   const m = midPrice.value
   return Number.isFinite(m) ? sx(m) : NaN
@@ -407,10 +460,10 @@ function onLeave() {
   hover.value = null
 }
 
-const totalAsk = computed(() => (asks.value.length ? asks.value[0][1] : 0))
+const totalAsk = computed(() => (asks.value.length ? asks.value[asks.value.length - 1][1] : 0))
 const totalBid = computed(() => (bids.value.length ? bids.value[bids.value.length - 1][1] : 0))
 
-const money = (n: number) => '$' + n.toLocaleString(undefined, { maximumFractionDigits: 6 })
+const money = (n: number) => '$' + n.toLocaleString(undefined, { maximumFractionDigits: 2 })
 const qty = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 4 })
 const qtyCompact = (n: number) =>
   new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n)

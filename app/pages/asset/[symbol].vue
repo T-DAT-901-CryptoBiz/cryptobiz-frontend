@@ -77,10 +77,8 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div
-        class="lg:col-span-2 rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden"
-      >
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6">
+      <div class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
         <ClientOnly>
           <ChartsTvAdvancedChart
             :symbol="tvSymbol"
@@ -99,8 +97,8 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-      <MarketPerformanceChips class="lg:col-span-2" :symbol="symbol" :height="400" />
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <MarketPerformanceChips class="lg:col-span-2 h-full" :symbol="symbol" :height="400" />
       <MarketVolumeSplit :symbol="symbol" :window="400" />
     </div>
 

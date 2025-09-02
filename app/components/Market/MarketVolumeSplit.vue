@@ -1,5 +1,7 @@
 <template>
-  <div class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
+  <div
+    class="h-full flex flex-col rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden"
+  >
     <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
       <h3 class="font-semibold">Buy / Sell Split</h3>
       <div class="text-xs text-white/50">Last {{ window }} trades</div>

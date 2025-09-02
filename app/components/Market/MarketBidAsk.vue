@@ -5,7 +5,10 @@
   >
     <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
       <h3 class="font-semibold">Bid / Ask</h3>
-      <div class="text-xs text-white/50">Realtime</div>
+      <span class="inline-flex items-center gap-1">
+          <span class="h-2 w-2 rounded-full bg-emerald-400/70"></span>
+          <span class="text-xs text-white/50">live</span>
+        </span>
     </div>
 
     <div class="p-4 grid grid-cols-2 gap-4">

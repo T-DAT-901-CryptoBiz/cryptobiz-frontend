@@ -6,7 +6,10 @@
     <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <h3 class="font-semibold">Order Book</h3>
-        <span class="text-xs text-white/50 hidden sm:inline">Live depth</span>
+        <span class="inline-flex items-center gap-1">
+          <span class="h-2 w-2 rounded-full bg-emerald-400/70"></span>
+          <span class="text-xs text-white/50">live</span>
+        </span>
       </div>
       <div class="flex items-center gap-3 text-xs text-white/60">
         <span class="inline-flex items-center gap-1">
