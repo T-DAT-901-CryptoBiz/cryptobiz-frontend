@@ -2,7 +2,7 @@
   <div class="rounded-2xl bg-neutral-900/60 p-4 border border-white/5">
     <div class="flex items-center justify-between mb-3">
       <h3 class="font-semibold">Your Watchlist</h3>
-      <NuxtLink to="/watchlist" class="text-xs text-white/60 hover:text-white/90">
+      <NuxtLink to="/app/pages/watchlist" class="text-xs text-white/60 hover:text-white/90">
         Manage
       </NuxtLink>
     </div>

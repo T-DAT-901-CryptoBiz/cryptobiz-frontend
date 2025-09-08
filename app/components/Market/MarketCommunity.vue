@@ -207,7 +207,6 @@ const toggleSegment = () => {
   visible.value = 5
 }
 
-/* Subreddits */
 const base = computed(() =>
   String(props.symbol || '').replace(/(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/i, ''),
 )

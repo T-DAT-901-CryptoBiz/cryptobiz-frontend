@@ -29,7 +29,7 @@
         <div class="flex items-end gap-6">
           <div class="text-right">
             <div class="text-3xl font-bold tabular-nums leading-tight">
-              <span v-if="!pending">${{ price.toLocaleString() }}</span>
+              <span v-if="!pending">${{ price }}</span>
               <span v-else class="inline-block h-8 w-32 rounded bg-white/10 animate-pulse"></span>
             </div>
             <div class="mt-1">

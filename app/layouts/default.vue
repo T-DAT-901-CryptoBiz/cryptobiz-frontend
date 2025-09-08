@@ -37,7 +37,16 @@
           class="group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors"
           :class="isActive(item.to) ? 'bg-white/10' : ''"
         >
-          <Icon :name="item.icon" class="h-5 w-5 shrink-0 text-white/80 group-hover:text-white" />
+          <div class="relative">
+            <Icon :name="item.icon" class="h-5 w-5 shrink-0 text-white/80 group-hover:text-white" />
+            <span
+              v-if="item.to === '/alerts' && hasUnread"
+              class="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[10px] leading-4 text-center font-bold shadow"
+            >
+              {{ unreadLabel }}
+            </span>
+          </div>
+
           <span v-if="!isCollapsed" class="truncate">{{ item.label }}</span>
 
           <span
@@ -103,16 +112,26 @@
       <main class="p-6">
         <slot />
       </main>
+      <UiToaster />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { watch } from 'vue'
 import { useState } from '#app'
+import { useAlertsCenter } from '~/composables/useAlertsCenter'
 
 const route = useRoute()
+const isMobileOpen = useState<boolean>('sb:mobileOpen', () => false)
+const isCollapsed = useState<boolean>('sb:collapsed', () => false)
+
+const { unread } = useAlertsCenter()
+const unreadCount = computed(() => Number(unread.value || 0))
+const hasUnread   = computed(() => unreadCount.value > 0)
+const unreadLabel = computed(() => (unreadCount.value > 9 ? '9+' : String(unreadCount.value)))
+
 
 type NavItem = { to: string; label: string; icon: string }
 const nav: NavItem[] = [
@@ -121,9 +140,6 @@ const nav: NavItem[] = [
   { to: '/watchlist', label: 'Watchlist', icon: 'lucide:star' },
   { to: '/alerts', label: 'Alerts', icon: 'lucide:bell' },
 ]
-
-const isMobileOpen = useState<boolean>('sb:mobileOpen', () => false)
-const isCollapsed = useState<boolean>('sb:collapsed', () => false)
 
 watch(
   () => route.fullPath,
