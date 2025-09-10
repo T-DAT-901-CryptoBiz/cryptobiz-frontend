@@ -109,26 +109,45 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAll24h } from '~/composables/useAll24h'
-import type { Ticker24h } from '~/types/binance'
+import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import type { Ticker24h, ExchangeInfo } from '~/types/binance'
 
 const { rows, pending } = useAll24h()
 const anyPending = computed(() => pending.value)
 
-const SUFFIX = /(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/
+const { exchangeInfo } = useBinanceMarket()
+const sym2Base = ref<Record<string, string>>({})
+const sym2Quote = ref<Record<string, string>>({})
 
-type ViewRow = {
-  symbol: string
-  base: string
-  lastPrice: number
-  lastPriceFmt: string
-  pct: number
-  pctAbs: string
-  pctSign: string
-  quoteVol: number
-  quoteVolFmt: string
-  trades: number
+onMounted(async () => {
+  const r = await exchangeInfo()
+  await r.refresh()
+  const mapB: Record<string, string> = {}
+  const mapQ: Record<string, string> = {}
+  ;(r.data.value?.symbols || []).forEach((s: ExchangeInfo['symbols'][number]) => {
+    mapB[s.symbol] = s.baseAsset
+    mapQ[s.symbol] = s.quoteAsset
+  })
+  sym2Base.value = mapB
+  sym2Quote.value = mapQ
+})
+
+const ALLOWED_QUOTES = new Set(['USDT', 'USDC', 'FDUSD', 'TUSD', 'USD', 'BUSD'])
+
+const BAD_BASE_SUFFIX = /(UP|DOWN|BULL|BEAR)(\d+X)?$/i
+
+const MIN_QUOTE_VOL = 5_000_000 // $5M
+const MIN_TRADES = 1_000
+
+const QUOTE_PRIORITY: Record<string, number> = {
+  USDT: 1,
+  USDC: 2,
+  FDUSD: 3,
+  BUSD: 4,
+  TUSD: 5,
+  USD: 6,
 }
 
 function toNum(n: unknown, d = 0) {
@@ -144,16 +163,44 @@ function compact(n: number) {
   )
 }
 
-const view = computed<ViewRow[]>(() =>
-  (rows.value as Ticker24h[]).map((r) => {
+type ViewRow = {
+  symbol: string
+  base: string
+  quote: string
+  lastPrice: number
+  lastPriceFmt: string
+  pct: number
+  pctAbs: string
+  pctSign: string
+  quoteVol: number
+  quoteVolFmt: string
+  trades: number
+}
+
+const filtered = computed<ViewRow[]>(() => {
+  const bestByBase = new Map<string, ViewRow>()
+
+  for (const r of rows.value as Ticker24h[]) {
+    const sym = r.symbol
+    const base = sym2Base.value[sym] || sym.replace(/(USDT|USDC|FDUSD|BUSD|TUSD|USD)$/, '')
+    const quote = sym2Quote.value[sym] || (sym.match(/USDT|USDC|FDUSD|BUSD|TUSD|USD$/)?.[0] ?? '')
+
+    if (!ALLOWED_QUOTES.has(quote)) continue
+
+    if (BAD_BASE_SUFFIX.test(base)) continue
+
     const last = toNum(r.lastPrice)
     const pct = toNum(r.priceChangePercent)
     const qv = toNum(r.quoteVolume)
     const trades = toNum(r.count)
-    const base = String(r.symbol).replace(SUFFIX, '')
-    return {
-      symbol: r.symbol,
+
+    if (qv < MIN_QUOTE_VOL) continue
+    if (trades < MIN_TRADES) continue
+
+    const row: ViewRow = {
+      symbol: sym,
       base,
+      quote,
       lastPrice: last,
       lastPriceFmt: money(last),
       pct,
@@ -163,30 +210,41 @@ const view = computed<ViewRow[]>(() =>
       quoteVolFmt: compact(qv),
       trades,
     }
-  }),
-)
+
+    const prev = bestByBase.get(base)
+    if (!prev) {
+      bestByBase.set(base, row)
+      continue
+    }
+
+    const pa = QUOTE_PRIORITY[prev.quote] ?? 999
+    const pb = QUOTE_PRIORITY[row.quote] ?? 999
+    if (pb < pa || (pb === pa && row.quoteVol > prev.quoteVol)) {
+      bestByBase.set(base, row)
+    }
+  }
+
+  return Array.from(bestByBase.values())
+})
 
 const topN = 3
+
 const popularRows = computed(() =>
-  view.value
+  filtered.value
     .slice()
     .sort((a, b) => b.trades - a.trades)
     .slice(0, topN),
 )
+
 const topGainersRows = computed(() =>
-  view.value
+  filtered.value
     .slice()
     .sort((a, b) => b.pct - a.pct)
     .slice(0, topN),
 )
-const topLosersRows = computed(() =>
-  view.value
-    .slice()
-    .sort((a, b) => a.pct - b.pct)
-    .slice(0, topN),
-)
+
 const topVolumeRows = computed(() =>
-  view.value
+  filtered.value
     .slice()
     .sort((a, b) => b.quoteVol - a.quoteVol)
     .slice(0, topN),

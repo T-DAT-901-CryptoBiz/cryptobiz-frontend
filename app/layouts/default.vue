@@ -39,12 +39,6 @@
         >
           <div class="relative">
             <Icon :name="item.icon" class="h-5 w-5 shrink-0 text-white/80 group-hover:text-white" />
-            <span
-              v-if="item.to === '/alerts' && hasUnread"
-              class="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 rounded-full bg-rose-500 text-white text-[10px] leading-4 text-center font-bold shadow"
-            >
-              {{ unreadLabel }}
-            </span>
           </div>
 
           <span v-if="!isCollapsed" class="truncate">{{ item.label }}</span>
@@ -57,18 +51,6 @@
           </span>
         </NuxtLink>
       </nav>
-
-      <div v-if="!isCollapsed" class="mt-auto p-3 border-t border-white/10">
-        <div class="flex items-center gap-2">
-          <div class="h-8 w-8 rounded-full bg-neutral-800 grid place-items-center">
-            <Icon name="lucide:user" class="h-4 w-4" />
-          </div>
-          <div class="text-xs">
-            <div class="font-medium">Guest</div>
-            <div class="text-white/50">Dark</div>
-          </div>
-        </div>
-      </div>
     </aside>
 
     <button
@@ -112,41 +94,24 @@
       <main class="p-6">
         <slot />
       </main>
-      <UiToaster />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useState } from '#app'
-import { useAlertsCenter } from '~/composables/useAlertsCenter'
 
 const route = useRoute()
 const isMobileOpen = useState<boolean>('sb:mobileOpen', () => false)
 const isCollapsed = useState<boolean>('sb:collapsed', () => false)
-
-const { unread } = useAlertsCenter()
-const unreadCount = computed(() => Number(unread.value || 0))
-const hasUnread   = computed(() => unreadCount.value > 0)
-const unreadLabel = computed(() => (unreadCount.value > 9 ? '9+' : String(unreadCount.value)))
-
 
 type NavItem = { to: string; label: string; icon: string }
 const nav: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: 'lucide:layout-dashboard' },
   { to: '/markets', label: 'Markets', icon: 'lucide:line-chart' },
   { to: '/watchlist', label: 'Watchlist', icon: 'lucide:star' },
-  { to: '/alerts', label: 'Alerts', icon: 'lucide:bell' },
 ]
-
-watch(
-  () => route.fullPath,
-  () => {
-    isMobileOpen.value = false
-  },
-)
 
 const isActive = (to: string) => route.path === to || route.path.startsWith(to + '/')
 </script>

@@ -36,6 +36,7 @@ const srcs = computed(() => {
     `https://assets.binance.com/image/currency/logo/${a}.png`,
     `https://static.coincap.io/assets/icons/${lower}@2x.png`,
     `https://cryptoicons.org/api/icon/${lower}/64`,
+    `https://www.coingecko.com/coins/${lower}/logo.png`,
   ]
 })
 const idx = ref(0)

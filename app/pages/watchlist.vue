@@ -81,7 +81,7 @@
         </div>
         <p class="text-white/80 font-medium">Your watchlist is empty</p>
         <p class="text-sm text-white/60 mt-1">
-          Go to the page <NuxtLink to="/markets" class="underline">Marchés</NuxtLink> then add
+          Go to the page <NuxtLink to="/markets" class="underline">Markets</NuxtLink> then add
           assets with the star ★.
         </p>
       </div>
