@@ -67,8 +67,8 @@ function baseFromSymbol(sym: string): string {
 function trendIcon(it: Item): string | null {
   const v = it.value?.trim() || ''
   const cls = it.valueClass || ''
-  if (v.startsWith('+') || /emerald|green/i.test(cls)) return 'lucide:arrow-up-right'
-  if (v.startsWith('-') || /rose|red/i.test(cls)) return 'lucide:arrow-down-right'
+  if (v.startsWith('+') || /emerald|green/i.test(cls)) return 'lucide:trending-up'
+  if (v.startsWith('-') || /rose|red/i.test(cls)) return 'lucide:trending-down'
   return 'lucide:dot'
 }
 </script>

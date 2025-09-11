@@ -129,7 +129,7 @@
 
               <div class="mt-2 text-xs text-white/70 flex items-center gap-4">
                 <span class="inline-flex items-center gap-1">
-                  <Icon name="lucide:arrow-up" class="h-4 w-4" />
+                  <Icon name="lucide:trending-up" class="h-4 w-4" />
                   {{ p.score.toLocaleString() }}
                 </span>
                 <span class="inline-flex items-center gap-1">

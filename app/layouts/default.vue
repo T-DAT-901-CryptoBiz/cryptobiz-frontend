@@ -85,7 +85,17 @@
           <Icon v-else name="lucide:x" class="h-5 w-5" />
         </button>
 
-        <div class="text-sm text-white/70">Welcome 👋</div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-sm font-medium text-white/80 truncate">
+            {{ pageTitle }}
+          </h1>
+          <span
+            class="text-[11px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-white/60"
+            :title="fullDate"
+          >
+            {{ timeHHMM }}
+          </span>
+        </div>
         <div class="ml-auto flex items-center gap-2">
           <slot name="top-actions" />
         </div>
@@ -101,6 +111,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { useState } from '#app'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const route = useRoute()
 const isMobileOpen = useState<boolean>('sb:mobileOpen', () => false)
@@ -111,7 +122,32 @@ const nav: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: 'lucide:layout-dashboard' },
   { to: '/markets', label: 'Markets', icon: 'lucide:line-chart' },
   { to: '/watchlist', label: 'Watchlist', icon: 'lucide:star' },
+  { to: '/news', label: 'News', icon: 'lucide:newspaper' },
 ]
 
 const isActive = (to: string) => route.path === to || route.path.startsWith(to + '/')
+
+const titles: Record<string, string> = {
+  '/': 'Dashboard',
+  '/markets': 'Markets',
+  '/watchlist': 'Watchlist',
+  '/news': 'News',
+}
+const pageTitle = computed(() => (route.meta.title as string) || titles[route.path] || 'CryptoBiz')
+
+const now = ref<Date>(new Date())
+let t: number | null = null
+onMounted(() => {
+  t = window.setInterval(() => (now.value = new Date()), 1000) as unknown as number
+})
+onBeforeUnmount(() => {
+  if (t) clearInterval(t)
+})
+
+const timeHHMM = computed(() =>
+  now.value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+)
+const fullDate = computed(() =>
+  now.value.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }),
+)
 </script>

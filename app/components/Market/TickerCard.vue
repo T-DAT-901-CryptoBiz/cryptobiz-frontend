@@ -33,7 +33,7 @@
         :class="pct24 >= 0 ? 'text-emerald-400' : 'text-rose-400'"
       >
         <Icon
-          :name="pct24 >= 0 ? 'lucide:arrow-up-right' : 'lucide:arrow-down-right'"
+          :name="pct24 >= 0 ? 'lucide:trending-up' : 'lucide:trending-down'"
           class="h-4 w-4"
         />
         <span class="tabular-nums">{{ signPct }}</span>

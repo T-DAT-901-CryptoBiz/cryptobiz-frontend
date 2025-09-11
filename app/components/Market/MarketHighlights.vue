@@ -20,17 +20,26 @@
 
       <ul v-else class="space-y-3">
         <li v-for="r in popularRows" :key="r.symbol" class="flex items-center justify-between">
-          <div class="flex items-center gap-3 min-w-0">
-            <ui-coin-logo :asset="r.base" :size="20" />
-            <div class="truncate text-sm">{{ r.base }}</div>
-          </div>
+          <NuxtLink :to="`/asset/${r.symbol}`" class="font-medium hover:underline">
+            <div class="flex items-center gap-3 min-w-0">
+              <ui-coin-logo :asset="r.base" :size="20" />
+              <div class="truncate text-sm">{{ r.base }}</div>
+            </div>
+          </NuxtLink>
           <div class="text-right">
             <div class="tabular-nums text-sm">${{ r.lastPriceFmt }}</div>
-            <div
-              :class="r.pct >= 0 ? 'text-emerald-400' : 'text-rose-400'"
-              class="text-xs tabular-nums"
-            >
-              {{ r.pctSign }}
+            <div class="text-xs flex items-center">
+              <Icon
+                :name="
+                  Number(r.pct) >= 0
+                    ? 'lucide:trending-up text-emerald-400'
+                    : 'lucide:trending-down text-rose-400'
+                "
+                class="h-4 w-4 mr-0.5"
+              />
+              <span :class="Number(r.pct) >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                {{ r.pctSign }}%
+              </span>
             </div>
           </div>
         </li>
@@ -57,13 +66,27 @@
 
       <ul v-else class="space-y-3">
         <li v-for="r in topGainersRows" :key="r.symbol" class="flex items-center justify-between">
-          <div class="flex items-center gap-3 min-w-0">
-            <ui-coin-logo :asset="r.base" :size="20" />
-            <div class="truncate text-sm">{{ r.base }}</div>
-          </div>
+          <NuxtLink :to="`/asset/${r.symbol}`" class="font-medium hover:underline">
+            <div class="flex items-center gap-3 min-w-0">
+              <ui-coin-logo :asset="r.base" :size="20" />
+              <div class="truncate text-sm">{{ r.base }}</div>
+            </div>
+          </NuxtLink>
           <div class="text-right">
             <div class="tabular-nums text-sm">${{ r.lastPriceFmt }}</div>
-            <div class="text-emerald-400 text-xs tabular-nums">+{{ r.pctAbs }}%</div>
+            <div class="text-xs flex items-center">
+              <Icon
+                :name="
+                  Number(r.pctAbs) >= 0
+                    ? 'lucide:trending-up text-emerald-400'
+                    : 'lucide:trending-down'
+                "
+                class="h-4 w-4 mr-0.5"
+              />
+              <span :class="Number(r.pctAbs) >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                {{ r.pctAbs }}%
+              </span>
+            </div>
           </div>
         </li>
       </ul>
@@ -89,17 +112,26 @@
 
       <ul v-else class="space-y-3">
         <li v-for="r in topVolumeRows" :key="r.symbol" class="flex items-center justify-between">
-          <div class="flex items-center gap-3 min-w-0">
-            <ui-coin-logo :asset="r.base" :size="20" />
-            <div class="truncate text-sm">{{ r.base }}</div>
-          </div>
+          <NuxtLink :to="`/asset/${r.symbol}`" class="font-medium hover:underline">
+            <div class="flex items-center gap-3 min-w-0">
+              <ui-coin-logo :asset="r.base" :size="20" />
+              <div class="truncate text-sm">{{ r.base }}</div>
+            </div>
+          </NuxtLink>
           <div class="text-right">
             <div class="tabular-nums text-sm">${{ r.quoteVolFmt }}</div>
-            <div
-              :class="r.pct >= 0 ? 'text-emerald-400' : 'text-rose-400'"
-              class="text-xs tabular-nums"
-            >
-              {{ r.pctSign }}
+            <div class="text-xs flex items-center">
+              <Icon
+                :name="
+                  Number(r.pct) >= 0
+                    ? 'lucide:trending-up text-emerald-400'
+                    : 'lucide:trending-down text-rose-400'
+                "
+                class="h-4 w-4 mr-0.5"
+              />
+              <span :class="Number(r.pct) >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                {{ r.pctSign }}%
+              </span>
             </div>
           </div>
         </li>
@@ -205,7 +237,7 @@ const filtered = computed<ViewRow[]>(() => {
       lastPriceFmt: money(last),
       pct,
       pctAbs: Math.abs(pct).toFixed(2),
-      pctSign: `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`,
+      pctSign: `${pct >= 0 ? '' : ''}${pct.toFixed(2)}%`,
       quoteVol: qv,
       quoteVolFmt: compact(qv),
       trades,
