@@ -11,8 +11,8 @@
     >
       <div class="h-14 px-3 flex items-center justify-between border-b border-white/10">
         <NuxtLink to="/" class="flex items-center gap-2">
-          <div class="h-9 w-9 rounded-xl bg-neutral-800 grid place-items-center">
-            <Icon name="lucide:bitcoins" class="h-5 w-5" />
+          <div class="h-9 w-9 rounded-xl bg-neutral-700 grid place-items-center">
+            <img src="/cryptobiz-logo.png" alt="CryptoBiz" class="h-9 w-9" />
           </div>
           <span v-if="!isCollapsed" class="font-semibold tracking-tight">CryptoBiz</span>
         </NuxtLink>
