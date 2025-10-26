@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     public: {
       binanceRestBase: 'https://api.binance.com',
       binanceWsBase: 'wss://stream.binance.com:9443/ws',
+      klineBaseUrl: 'http://127.0.0.1:8004',
     },
   },
   typescript: { strict: true },

@@ -2,14 +2,16 @@
   <div class="min-h-screen bg-neutral-950 text-white flex">
     <aside
       id="sidebar"
-      class="fixed z-30 inset-y-0 left-0 bg-neutral-900/85 border-r border-white/10 transition-[width,transform] duration-300 ease-out lg:static"
+      class="fixed z-30 inset-y-0 left-0 bg-neutral-900/85 border-r border-white/10 transition-[width,transform] duration-300 ease-out"
       :class="[
         isCollapsed ? 'w-16' : 'w-64',
         isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
       ]"
       aria-label="Main navigation"
     >
-      <div class="h-14 px-3 flex items-center justify-between border-b border-white/10">
+      <div
+        class="h-14 px-3 flex items-center justify-between border-b border-white/10 sticky top-0 bg-neutral-900/85"
+      >
         <NuxtLink to="/" class="flex items-center gap-2">
           <div class="h-9 w-9 rounded-xl bg-neutral-700 grid place-items-center">
             <img src="/cryptobiz-logo.png" alt="CryptoBiz" class="h-9 w-9" />
@@ -28,7 +30,7 @@
         </button>
       </div>
 
-      <nav class="p-2 space-y-1">
+      <nav class="flex-1 p-2 space-y-1 overflow-y-auto overscroll-contain pr-2 scrollbar-thin">
         <NuxtLink
           v-for="item in nav"
           :key="item.to"
@@ -70,7 +72,10 @@
       aria-hidden="true"
     />
 
-    <div class="flex-1 min-w-0 flex flex-col">
+    <div
+      class="flex-1 min-w-0 flex flex-col"
+      :class="isMobileOpen ? '' : isCollapsed ? 'lg:ml-16' : 'lg:ml-64'"
+    >
       <header
         class="h-14 border-b border-white/10 flex items-center px-4 sticky top-0 bg-neutral-950 z-10"
       >

@@ -141,7 +141,7 @@
           </li>
         </ul>
         <div v-else class="space-y-2">
-          <div v-for="i in 6" :key="i" class="flex items-center justify-between">
+          <div v-for="i in 5" :key="i" class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <div class="h-4 w-4 rounded bg-white/10 animate-pulse" />
               <div class="h-4 w-28 rounded bg-white/10 animate-pulse" />
