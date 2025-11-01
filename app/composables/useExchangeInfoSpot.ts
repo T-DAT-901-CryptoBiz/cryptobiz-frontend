@@ -12,15 +12,16 @@ type ExchangeInfo = {
 }
 
 export function useExchangeInfoSpot() {
+  // Utiliser le client centralisé avec cache partagé
+  const { exchangeInfo } = useBinanceMarket()
   const meta = ref<SpotSymbolMeta[]>([])
   const pending = ref<boolean>(true)
 
   const load = async () => {
     pending.value = true
     try {
-      const res = await fetch('https://api.binance.com/api/v3/exchangeInfo')
-      if (!res.ok) throw new Error('exchangeInfo fail')
-      const j = (await res.json()) as ExchangeInfo
+      const r = await exchangeInfo()
+      const j = (r.data.value ?? {}) as ExchangeInfo
       const arr = (j.symbols ?? []).map((s) => ({
         symbol: String(s.symbol || ''),
         baseAsset: (s as any).baseAsset,
