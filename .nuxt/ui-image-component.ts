@@ -1,1 +1,0 @@
-export { default } from "/Users/antoinegourgue/Desktop/Projects/cryptobiz-frontend/node_modules/@nuxt/image/dist/runtime/components/NuxtImg.vue";
