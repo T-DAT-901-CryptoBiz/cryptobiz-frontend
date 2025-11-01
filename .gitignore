@@ -1,4 +1,9 @@
 # ... existing code ...
 .data/
 .env
-.env.local
+.env.*
+!.env.example
+.nuxt/
+node_modules/
+.DS_Store
+.idea/
