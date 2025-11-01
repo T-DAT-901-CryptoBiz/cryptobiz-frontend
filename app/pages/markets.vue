@@ -104,22 +104,13 @@ function splitSymbol(sym: string) {
   return { base, quote }
 }
 
+const { list: favoritesList } = useWatchlist()
+
 const baseUniverse = computed<string[]>(() => {
   if (cat.value === 'spot') return spotUni.value
   if (cat.value === 'futures') return futUni.value
   if (cat.value === 'favorites') {
-    if (import.meta.server) return []
-    let favs: string[] = []
-    if (import.meta.client) {
-      try {
-        const stored = localStorage.getItem('favoritesSymbols')
-        favs = stored ? JSON.parse(stored) : []
-      } catch {
-        // Ignore parsing errors
-        favs = []
-      }
-    }
-    const favSet = new Set(favs)
+    const favSet = new Set(favoritesList.value)
     return Array.from(new Set([...spotUni.value, ...futUni.value])).filter((s) => favSet.has(s))
   }
   return Array.from(new Set([...spotUni.value, ...futUni.value]))

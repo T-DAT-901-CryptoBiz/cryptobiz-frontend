@@ -36,41 +36,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
-const STORAGE_KEY = 'favoritesSymbols'
 const MAX_SHOW = 4
 
-const list = ref<string[]>([])
-
-function loadFromStorage() {
-  if (import.meta.server) return
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY) || '[]'
-    const arr = JSON.parse(raw)
-    list.value = Array.isArray(arr)
-      ? Array.from(new Set(arr.filter((x: unknown) => typeof x === 'string' && String(x).trim())))
-      : []
-  } catch {
-    list.value = []
-  }
-}
-
-function onStorage(e: StorageEvent) {
-  if (e.key === STORAGE_KEY) loadFromStorage()
-}
-function onVisibility() {
-  if (!document.hidden) loadFromStorage()
-}
+const { list, refresh } = useWatchlist()
 
 onMounted(() => {
-  loadFromStorage()
-  window.addEventListener('storage', onStorage)
-  document.addEventListener('visibilitychange', onVisibility)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('storage', onStorage)
-  document.removeEventListener('visibilitychange', onVisibility)
+  void refresh()
 })
 
 const total = computed(() => list.value.length)

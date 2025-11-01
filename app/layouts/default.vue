@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-neutral-950 text-white flex">
     <aside
       id="sidebar"
-      class="fixed z-30 inset-y-0 left-0 bg-neutral-900/85 border-r border-white/10 transition-[width,transform] duration-300 ease-out"
+      class="fixed z-30 inset-y-0 left-0 bg-neutral-900/85 border-r border-white/10 transition-[width,transform] duration-300 ease-out flex flex-col"
       :class="[
         isCollapsed ? 'w-16' : 'w-64',
         isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
@@ -30,7 +30,10 @@
         </button>
       </div>
 
-      <nav class="flex-1 p-2 space-y-1 overflow-y-auto overscroll-contain pr-2 scrollbar-thin">
+      <nav
+        class="flex-1 p-2 space-y-1 pr-2 scrollbar-thin"
+        :class="isCollapsed ? 'overflow-hidden' : 'overflow-y-auto overscroll-contain'"
+      >
         <NuxtLink
           v-for="item in nav"
           :key="item.to"
@@ -53,6 +56,32 @@
           </span>
         </NuxtLink>
       </nav>
+
+      <!-- User section with logout at bottom -->
+      <div
+        v-if="isAuthenticated"
+        class="mt-auto border-t border-white/10 p-2"
+        :class="isCollapsed ? '' : 'space-y-1'"
+      >
+        <div v-if="!isCollapsed && user?.name" class="px-3 py-2">
+          <div class="text-xs text-white/50 mb-1">User</div>
+          <div class="text-sm text-white truncate font-medium">{{ user.name }}</div>
+        </div>
+        <button
+          @click="handleLogout"
+          :title="isCollapsed ? 'Logout' : ''"
+          class="group relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors text-white/80 hover:text-white"
+        >
+          <Icon name="lucide:log-out" class="h-5 w-5 shrink-0" />
+          <span v-if="!isCollapsed" class="truncate">Logout</span>
+          <span
+            v-if="isCollapsed"
+            class="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute left-14 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md bg-neutral-800 border border-white/10 text-xs whitespace-nowrap"
+          >
+            Logout
+          </span>
+        </button>
+      </div>
     </aside>
 
     <button
@@ -103,10 +132,9 @@
         </div>
         <div class="ml-auto flex items-center gap-2">
           <slot name="top-actions" />
-          <UButton v-if="isAuthenticated" variant="ghost" size="sm" @click="handleLogout">
-            <Icon name="lucide:log-out" class="w-4 h-4 mr-2" />
-            {{ user?.name || 'User' }}
-          </UButton>
+          <div v-if="isAuthenticated && user?.name" class="text-sm text-white/70">
+            {{ user.name }}
+          </div>
         </div>
       </header>
 

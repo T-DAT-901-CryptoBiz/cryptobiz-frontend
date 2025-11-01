@@ -2,44 +2,21 @@
   <section class="rounded-2xl bg-neutral-900/60 p-4 border border-white/5">
     <!-- Header -->
     <header class="flex items-center justify-between mb-3">
-      <h3 class="font-semibold">Liquidity Snapshot — 24h Avg</h3>
+      <h3 class="font-semibold">Liquidity Snapshot — Real-time</h3>
 
       <div class="flex items-center gap-2 text-xs">
-        <span v-if="lastUpdated" class="text-white/50">
-          Samples {{ totalSamples }} · Updated {{ timeAgo(lastUpdated) }}
+        <span v-if="lastUpdated" class="text-white/50 flex items-center gap-1">
+          <span class="relative flex h-2 w-2">
+            <span
+              class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
+            ></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          Live · Updated {{ timeAgo(lastUpdated) }}
         </span>
-
-        <button
-          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/15 ring-1 ring-white/10 transition"
-          :disabled="loading"
-          @click="sampleNow"
-        >
-          <svg
-            v-if="loading"
-            class="h-3.5 w-3.5 animate-spin"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <circle
-              class="opacity-20"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            />
-            <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" />
-          </svg>
-          <span>Refresh</span>
-        </button>
-
-        <button
-          class="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-white/5 hover:bg-white/10 ring-1 ring-white/10 transition"
-          @click="resetHistory"
-        >
-          Reset
-        </button>
+        <span v-if="totalSamples > 0" class="text-white/50">
+          · Samples (24h): {{ totalSamples }}
+        </span>
       </div>
     </header>
 
@@ -63,9 +40,9 @@
               {{ r.symbol }}
             </NuxtLink>
             <span
-              class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 ring-1 ring-white/10 text-white/60"
+              class="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 ring-1 ring-green-500/30 text-green-300"
             >
-              24h avg
+              Live
             </span>
           </div>
 
@@ -75,6 +52,7 @@
             :title="`Avg spread over 24h`"
           >
             Spread {{ r.spread.toFixed(3) }}%
+            <span class="ml-1" v-if="r.isRealtime">●</span>
           </span>
         </div>
 
@@ -90,7 +68,7 @@
               width: (r.bidShare * 100).toFixed(2) + '%',
               background: 'linear-gradient(90deg,#22c55e,#16a34a)',
             }"
-            title="Bids (24h avg)"
+            title="Bids (real-time)"
           />
           <div
             class="h-full"
@@ -98,7 +76,7 @@
               width: (r.askShare * 100).toFixed(2) + '%',
               background: 'linear-gradient(90deg,#ef4444,#b91c1c)',
             }"
-            title="Asks (24h avg)"
+            title="Asks (real-time)"
           />
         </div>
 
@@ -135,13 +113,14 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed, watch } from 'vue'
 import { useBinanceMarket } from '~/composables/useBinanceMarket'
+import { useBinanceWS } from '~/composables/useBinanceWS'
 
 /** === Props === */
 const props = withDefaults(
   defineProps<{
     symbols?: string[]
     depth?: number
-    sampleEveryMs?: number // fréquence d’échantillonnage
+    sampleEveryMs?: number // fréquence d'échantillonnage pour la moyenne 24h
   }>(),
   {
     symbols: () => ['BTCUSDT', 'ETHUSDT'],
@@ -151,6 +130,7 @@ const props = withDefaults(
 )
 
 const { orderBook } = useBinanceMarket()
+const { connect } = useBinanceWS()
 
 /** === Types === */
 type Sample = { t: number; bids: number; asks: number; spread: number }
@@ -162,6 +142,7 @@ type Row = {
   bidShare: number
   askShare: number
   samples: number
+  isRealtime: boolean
 }
 
 /** === State === */
@@ -217,16 +198,65 @@ function saveHistory(sym: string, arr: Sample[]) {
 }
 
 /** === Fetch one snapshot (instantané) === */
+function calculateLiquidity(
+  bids: [string, string][],
+  asks: [string, string][],
+): {
+  bids: number
+  asks: number
+  spread: number
+} {
+  const bidsUsd = bids.reduce((a: number, [p, q]: [string, string]) => a + Number(p) * Number(q), 0)
+  const asksUsd = asks.reduce((a: number, [p, q]: [string, string]) => a + Number(p) * Number(q), 0)
+  const bestBid = Number(bids[0]?.[0] || 0)
+  const bestAsk = Number(asks[0]?.[0] || 0)
+  const spread = bestAsk && bestBid ? ((bestAsk - bestBid) / bestAsk) * 100 : 0
+  return { bids: bidsUsd, asks: asksUsd, spread }
+}
+
 async function snapshot(sym: string): Promise<Sample | null> {
   const r = await orderBook(sym, props.depth)
   const ob = r.data.value
   if (!ob) return null
-  const bids = ob.bids.reduce((a: number, [p, q]: [string, string]) => a + Number(p) * Number(q), 0)
-  const asks = ob.asks.reduce((a: number, [p, q]: [string, string]) => a + Number(p) * Number(q), 0)
-  const bestBid = Number(ob.bids[0]?.[0] || 0)
-  const bestAsk = Number(ob.asks[0]?.[0] || 0)
-  const spread = bestAsk && bestBid ? ((bestAsk - bestBid) / bestAsk) * 100 : 0
+  const { bids, asks, spread } = calculateLiquidity(ob.bids, ob.asks)
   return { t: Date.now(), bids, asks, spread }
+}
+
+/** === Update row with real-time data === */
+function updateRowRealtime(sym: string, bids: [string, string][], asks: [string, string][]) {
+  const { bids: bidsUsd, asks: asksUsd, spread } = calculateLiquidity(bids, asks)
+  const index = rows.value.findIndex((r) => r.symbol === sym)
+
+  // Si la row n'existe pas encore, l'ajouter
+  if (index === -1) {
+    const total = Math.max(1e-9, bidsUsd + asksUsd)
+    const hist = loadHistory(sym)
+    rows.value.push({
+      symbol: sym,
+      bids: bidsUsd,
+      asks: asksUsd,
+      spread,
+      bidShare: bidsUsd / total,
+      askShare: asksUsd / total,
+      samples: hist.length,
+      isRealtime: true,
+    })
+    lastUpdated.value = Date.now()
+    loading.value = false
+    return
+  }
+
+  const total = Math.max(1e-9, bidsUsd + asksUsd)
+  rows.value[index] = {
+    ...rows.value[index],
+    bids: bidsUsd,
+    asks: asksUsd,
+    spread,
+    bidShare: bidsUsd / total,
+    askShare: asksUsd / total,
+    isRealtime: true,
+  }
+  lastUpdated.value = Date.now()
 }
 
 /** === One sampling cycle (append + avg 24h) === */
@@ -273,6 +303,7 @@ async function sampleNow() {
         bidShare: bids / total,
         askShare: asks / total,
         samples: pruned.length,
+        isRealtime: false,
       })
     } catch {
       // skip symbol on error
@@ -284,12 +315,85 @@ async function sampleNow() {
   loading.value = false
 }
 
-/** === Timer (peu fréquent) === */
+/** === WebSocket connections === */
+type DepthPartialMsg = {
+  lastUpdateId: number
+  bids: [string, string][]
+  asks: [string, string][]
+}
+
+function isDepthPartialMsg(x: unknown): x is DepthPartialMsg {
+  if (!x || typeof x !== 'object') return false
+  const v = x as Record<string, unknown>
+  return Array.isArray(v.bids) && Array.isArray(v.asks) && typeof v.lastUpdateId === 'number'
+}
+
+let wsCleanups: Array<() => void> = []
+
+function openWebSockets() {
+  if (import.meta.server) return
+  // Fermer les connexions existantes
+  wsCleanups.forEach((cleanup) => cleanup())
+  wsCleanups = []
+
+  // Ouvrir une connexion WebSocket pour chaque symbole
+  for (const sym of props.symbols) {
+    const canPartial = props.depth === 5 || props.depth === 10 || props.depth === 20
+    const path = canPartial
+      ? `${sym.toLowerCase()}@depth${props.depth}@100ms`
+      : `${sym.toLowerCase()}@depth@100ms`
+
+    // Dernier échantillon sauvegardé pour éviter de surcharger l'historique
+    let lastSampleTime = 0
+    const SAMPLE_INTERVAL = 60 * 1000 // Sauvegarder toutes les minutes
+
+    const cleanup = connect(path, {
+      onMessage: (msg: unknown) => {
+        if (!isDepthPartialMsg(msg)) return
+        const now = Date.now()
+
+        // Utiliser les données directement pour la version temps réel (toujours)
+        updateRowRealtime(sym, msg.bids, msg.asks)
+
+        // Ajouter à l'historique seulement périodiquement (pour ne pas surcharger)
+        if (now - lastSampleTime >= SAMPLE_INTERVAL) {
+          const { bids, asks, spread } = calculateLiquidity(msg.bids, msg.asks)
+          const sample: Sample = { t: now, bids, asks, spread }
+          const hist = loadHistory(sym)
+          hist.push(sample)
+          const cutoff = now - WINDOW_MS
+          const pruned = hist.filter((x) => x.t >= cutoff)
+          if (pruned.length > 350) pruned.splice(0, pruned.length - 350)
+          saveHistory(sym, pruned)
+          lastSampleTime = now
+
+          // Mettre à jour le nombre de samples dans la row
+          const index = rows.value.findIndex((r) => r.symbol === sym)
+          if (index !== -1) {
+            rows.value[index].samples = pruned.length
+          }
+        }
+      },
+    })
+    wsCleanups.push(cleanup)
+  }
+}
+
+/** === Timer (peu fréquent) pour l'historique === */
 let timer: ReturnType<typeof setInterval> | null = null
 const start = () => {
   stop()
   if ((props.sampleEveryMs ?? 0) > 0 && import.meta.client) {
-    timer = setInterval(sampleNow, props.sampleEveryMs!)
+    timer = setInterval(() => {
+      // Mettre à jour le nombre de samples en arrière-plan
+      for (const s of props.symbols) {
+        const hist = loadHistory(s)
+        const index = rows.value.findIndex((r) => r.symbol === s)
+        if (index !== -1) {
+          rows.value[index].samples = hist.length
+        }
+      }
+    }, props.sampleEveryMs!)
   }
 }
 const stop = () => {
@@ -299,27 +403,22 @@ const stop = () => {
   }
 }
 
-/** === Reset history === */
-function resetHistory() {
-  if (import.meta.server || !import.meta.client) return
-  for (const s of props.symbols) {
-    try {
-      localStorage.removeItem(LS_KEY(s))
-    } catch {
-      // Ignore storage errors
-    }
-  }
-  sampleNow()
-}
-
 /** === Lifecycle === */
 onMounted(() => {
-  sampleNow() // première moyenne (utilisera l’historique si présent)
-  start() // échantillonnage (par défaut toutes les 5 min)
+  sampleNow() // première moyenne (utilisera l'historique si présent)
+  openWebSockets() // démarrer les WebSockets pour le temps réel
+  start() // échantillonnage en arrière-plan pour l'historique
 })
-onBeforeUnmount(stop)
+onBeforeUnmount(() => {
+  stop()
+  wsCleanups.forEach((cleanup) => cleanup())
+  wsCleanups = []
+})
 watch(
   () => [props.symbols, props.depth],
-  () => sampleNow(),
+  () => {
+    sampleNow()
+    openWebSockets()
+  },
 )
 </script>

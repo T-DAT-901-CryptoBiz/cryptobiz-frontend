@@ -257,22 +257,46 @@ export function useArticleStats() {
   }
 }
 
-const FAV_KEY = 'news:favorites:v1'
 const READ_KEY = 'news:read:v1'
 
 export function useNewsLocalState() {
+  const { isAuthenticated } = useAuth()
   const fav = useState<Set<number>>('news:fav', () => new Set<number>())
   const read = useState<Set<number>>('news:read', () => new Set<number>())
 
-  if (import.meta.client) {
-    if (fav.value.size === 0) {
-      try {
-        const stored = localStorage.getItem(FAV_KEY) || '[]'
-        fav.value = new Set<number>(JSON.parse(stored))
-      } catch {
-        // Ignore parsing errors
-      }
+  // Charger les favoris depuis l'API
+  const refreshFavorites = async () => {
+    if (!import.meta.client || !isAuthenticated.value) {
+      fav.value = new Set<number>()
+      return
     }
+
+    try {
+      const { favorites } = await $fetch<{ favorites: number[] }>('/api/favorites/news')
+      fav.value = new Set<number>(favorites || [])
+    } catch {
+      fav.value = new Set<number>()
+    }
+  }
+
+  // Charger les favoris au montage si authentifié
+  if (import.meta.client && isAuthenticated.value && fav.value.size === 0) {
+    void refreshFavorites()
+  }
+
+  // Recharger les favoris quand l'authentification change
+  if (import.meta.client) {
+    watch(isAuthenticated, (auth) => {
+      if (auth) {
+        void refreshFavorites()
+      } else {
+        fav.value = new Set<number>()
+      }
+    })
+  }
+
+  // Charger les articles lus depuis localStorage (état local)
+  if (import.meta.client) {
     if (read.value.size === 0) {
       try {
         const stored = localStorage.getItem(READ_KEY) || '[]'
@@ -283,16 +307,36 @@ export function useNewsLocalState() {
     }
   }
 
-  const toggleFav = (id: number) => {
-    if (fav.value.has(id)) {
+  const toggleFav = async (id: number) => {
+    if (!import.meta.client || !isAuthenticated.value) return
+
+    const wasFav = fav.value.has(id)
+
+    if (wasFav) {
       fav.value.delete(id)
+      try {
+        await $fetch('/api/favorites/news', {
+          method: 'DELETE',
+          query: { id },
+        })
+      } catch {
+        // Revert on error
+        fav.value.add(id)
+      }
     } else {
       fav.value.add(id)
-    }
-    if (import.meta.client) {
-      localStorage.setItem(FAV_KEY, JSON.stringify([...fav.value]))
+      try {
+        await $fetch('/api/favorites/news', {
+          method: 'POST',
+          body: { newsId: id },
+        })
+      } catch {
+        // Revert on error
+        fav.value.delete(id)
+      }
     }
   }
+
   const markRead = (id: number) => {
     if (!read.value.has(id)) {
       read.value.add(id)
@@ -311,5 +355,5 @@ export function useNewsLocalState() {
   const isFav = (id: number) => fav.value.has(id)
   const isRead = (id: number) => read.value.has(id)
 
-  return { fav, read, isFav, isRead, toggleFav, markRead, clearRead }
+  return { fav, read, isFav, isRead, toggleFav, markRead, clearRead, refreshFavorites }
 }

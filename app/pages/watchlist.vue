@@ -109,25 +109,19 @@ const { symbols: futuresUni } = useFuturesUniverse()
 const spotSet = computed(() => new Set(spotUni.value))
 const futSet = computed(() => new Set(futuresUni.value))
 
-const symbols = ref<string[]>([])
-function load() {
+const { list: symbols, refresh, remove } = useWatchlist()
+
+async function clearAll() {
   if (!import.meta.client) return
-  try {
-    const stored = localStorage.getItem('favoritesSymbols')
-    symbols.value = stored ? JSON.parse(stored) : []
-  } catch {
-    symbols.value = []
+  const symsToRemove = [...symbols.value]
+  for (const sym of symsToRemove) {
+    await remove(sym)
   }
 }
-function refresh() {
-  load()
-}
-function clearAll() {
-  if (!import.meta.client) return
-  localStorage.setItem('favoritesSymbols', '[]')
-  symbols.value = []
-}
-onMounted(load)
+
+onMounted(() => {
+  void refresh()
+})
 
 const FULL_NAMES: Record<string, string> = {
   BTC: 'Bitcoin',

@@ -9,8 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "prepare": "husky",
-    "lint": "eslint . --ext .ts,.js,.vue",
-    "lint:fix": "eslint . --ext .ts,.js,.vue --fix",
+    "lint": "eslint app server --ext .ts,.js,.vue",
+    "lint:fix": "eslint app server --ext .ts,.js,.vue --fix",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {

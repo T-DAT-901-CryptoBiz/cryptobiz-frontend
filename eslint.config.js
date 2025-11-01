@@ -7,7 +7,20 @@ import prettier from 'eslint-plugin-prettier'
 import globals from 'globals'
 
 export default [
-  { ignores: ['.nuxt/**', 'node_modules/**', 'dist/**', 'coverage/**'] },
+  {
+    ignores: [
+      '.nuxt/**',
+      'node_modules/**',
+      'node_modules.backup/**',
+      'dist/**',
+      '.output/**',
+      'coverage/**',
+      '.git/**',
+      '.data/**',
+      '*.config.js',
+      '*.config.ts',
+    ],
+  },
 
   js.configs.recommended,
 
@@ -48,6 +61,7 @@ export default [
         useFetch: 'readonly',
         useAsyncData: 'readonly',
         useHead: 'readonly',
+        useWatchlist: 'readonly',
       },
     },
     plugins: { vue },

@@ -314,7 +314,6 @@ onMounted(() => {
       void loadAllDataForSort()
     }, props.autoRefreshMs!)
   }
-  loadFavorites()
   // Charger les sparklines après le montage
   setTimeout(() => {
     void loadSparklinesForCurrentPage()
@@ -448,27 +447,14 @@ const isUniverseLoading = computed(() => !props.symbols?.length && universe.valu
 const isPageLoading = computed(() => viewSymbols.value.some((s) => !cache.has(s)))
 const missingCount = computed(() => Math.max(0, viewSymbols.value.length - rows.value.length))
 
-const favorites = ref<Set<string>>(new Set())
-function loadFavorites() {
-  if (import.meta.server || !import.meta.client) return
-  try {
-    const raw = localStorage.getItem('favoritesSymbols') || '[]'
-    favorites.value = new Set(JSON.parse(raw) as string[])
-  } catch {
-    favorites.value = new Set()
-  }
-}
-function saveFavorites() {
-  if (import.meta.server) return
-  localStorage.setItem('favoritesSymbols', JSON.stringify([...favorites.value]))
-}
+const { list: watchlist, toggle: toggleWatchlist } = useWatchlist()
+
 function isFav(sym: string) {
-  return favorites.value.has(sym)
+  return watchlist.value.includes(sym)
 }
-function toggleFav(sym: string) {
-  if (favorites.value.has(sym)) favorites.value.delete(sym)
-  else favorites.value.add(sym)
-  saveFavorites()
+
+async function toggleFav(sym: string) {
+  await toggleWatchlist(sym)
 }
 
 function baseFromSymbol(sym: string): string {
