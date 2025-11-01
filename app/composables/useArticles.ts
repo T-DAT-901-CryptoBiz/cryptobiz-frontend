@@ -132,7 +132,9 @@ const buildQuery = (q: ListQuery) => {
   const out: Record<string, string | number> = {}
   for (const [k, v] of Object.entries(q)) {
     if (v === null || v === undefined || v === '') continue
-    out[k] = v as any
+    if (typeof v === 'string' || typeof v === 'number') {
+      out[k] = v
+    }
   }
   return out
 }
@@ -212,7 +214,7 @@ export function useArticleStats() {
     const acc = new Map<string, number>()
     for (const [k, v] of Object.entries(src)) {
       const parts = String(k)
-        .split(/[,\|]/)
+        .split(/[,|]/)
         .map((x) => x.trim())
         .filter(Boolean)
       const syms = parts.map((p) => toSym(p)).filter(Boolean) as string[]
@@ -230,7 +232,9 @@ export function useArticleStats() {
         let host = u
         try {
           host = new URL(u).hostname.replace(/^www\./, '')
-        } catch {}
+        } catch {
+          // Ignore URL parsing errors
+        }
         return [host, Number(n) || 0] as [string, number]
       })
       .sort((a, b) => b[1] - a[1])
@@ -260,32 +264,48 @@ export function useNewsLocalState() {
   const fav = useState<Set<number>>('news:fav', () => new Set<number>())
   const read = useState<Set<number>>('news:read', () => new Set<number>())
 
-  if (process.client) {
+  if (import.meta.client) {
     if (fav.value.size === 0) {
       try {
-        fav.value = new Set<number>(JSON.parse(localStorage.getItem(FAV_KEY) || '[]'))
-      } catch {}
+        const stored = localStorage.getItem(FAV_KEY) || '[]'
+        fav.value = new Set<number>(JSON.parse(stored))
+      } catch {
+        // Ignore parsing errors
+      }
     }
     if (read.value.size === 0) {
       try {
-        read.value = new Set<number>(JSON.parse(localStorage.getItem(READ_KEY) || '[]'))
-      } catch {}
+        const stored = localStorage.getItem(READ_KEY) || '[]'
+        read.value = new Set<number>(JSON.parse(stored))
+      } catch {
+        // Ignore parsing errors
+      }
     }
   }
 
   const toggleFav = (id: number) => {
-    fav.value.has(id) ? fav.value.delete(id) : fav.value.add(id)
-    if (process.client) localStorage.setItem(FAV_KEY, JSON.stringify([...fav.value]))
+    if (fav.value.has(id)) {
+      fav.value.delete(id)
+    } else {
+      fav.value.add(id)
+    }
+    if (import.meta.client) {
+      localStorage.setItem(FAV_KEY, JSON.stringify([...fav.value]))
+    }
   }
   const markRead = (id: number) => {
     if (!read.value.has(id)) {
       read.value.add(id)
-      if (process.client) localStorage.setItem(READ_KEY, JSON.stringify([...read.value]))
+      if (import.meta.client) {
+        localStorage.setItem(READ_KEY, JSON.stringify([...read.value]))
+      }
     }
   }
   const clearRead = () => {
     read.value = new Set()
-    if (process.client) localStorage.setItem(READ_KEY, JSON.stringify([]))
+    if (import.meta.client) {
+      localStorage.setItem(READ_KEY, JSON.stringify([]))
+    }
   }
 
   const isFav = (id: number) => fav.value.has(id)

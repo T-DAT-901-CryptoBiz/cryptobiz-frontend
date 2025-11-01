@@ -121,8 +121,8 @@ import { useAll24h } from '~/composables/useAll24h'
 
 const { rows, pending } = useAll24h()
 
-const adv = computed(() => rows.value.filter((r: any) => Number(r.priceChangePercent) > 0).length)
-const dec = computed(() => rows.value.filter((r: any) => Number(r.priceChangePercent) < 0).length)
+const adv = computed(() => rows.value.filter((r) => Number(r.priceChangePercent) > 0).length)
+const dec = computed(() => rows.value.filter((r) => Number(r.priceChangePercent) < 0).length)
 const total = computed(() => rows.value.length)
 const flat = computed(() => Math.max(0, total.value - adv.value - dec.value))
 

@@ -24,7 +24,7 @@ function toMs(ts: number) {
   return ts < 1e12 ? ts * 1000 : ts
 }
 
-function normalizeRow(row: any): OhlcvPoint | null {
+function normalizeRow(row: unknown): OhlcvPoint | null {
   // supporte [t,o,h,l,c,v] (t en s ou ms) OU objets {t,o,h,l,c,v} OU binance-like {open_time, open_price, ...}
   try {
     if (Array.isArray(row)) {
@@ -46,7 +46,9 @@ function normalizeRow(row: any): OhlcvPoint | null {
       }
       if (Number.isFinite(tt)) return { t: tt, o: +o, h: +h, l: +l, c: +c, v: +v }
     }
-  } catch {}
+  } catch {
+    // Ignore parsing errors
+  }
   return null
 }
 
@@ -75,7 +77,7 @@ export function useKlines(params: Partial<FetchParams>) {
     pending.value = true
     error.value = null
     try {
-      const raw = await $fetch<any[]>(url.value)
+      const raw = await $fetch<unknown[]>(url.value)
       const rows = (raw ?? []).map(normalizeRow).filter(Boolean) as OhlcvPoint[]
       rows.sort((a, b) => a.t - b.t) // ASC obligatoire pour l’axe temps
       data.value = rows

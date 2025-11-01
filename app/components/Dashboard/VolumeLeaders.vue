@@ -46,8 +46,6 @@ const quotePriority: Record<string, number> = {
 }
 const qp = (q: string) => quotePriority[q] ?? 0
 const num = (x: unknown, d = 0) => (Number.isFinite(Number(x)) ? Number(x) : d)
-const compactUsd = (n: number) =>
-  new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n)
 
 const clean = computed(() => {
   const byBase = new Map<string, Ticker24h>()
@@ -62,7 +60,7 @@ const clean = computed(() => {
     if (!cur) byBase.set(base, r)
     else {
       const cq = split(String(cur.symbol)).quote
-      if (qp(quote) > qp(cq) || (qp(quote) === qp(cq) && qv > num((cur as any).quoteVolume))) {
+      if (qp(quote) > qp(cq) || (qp(quote) === qp(cq) && qv > num(cur.quoteVolume))) {
         byBase.set(base, r)
       }
     }

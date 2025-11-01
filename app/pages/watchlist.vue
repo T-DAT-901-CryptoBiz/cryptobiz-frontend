@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
 import { useFuturesUniverse } from '~/composables/useFuturesUniverse'
 
@@ -111,9 +111,10 @@ const futSet = computed(() => new Set(futuresUni.value))
 
 const symbols = ref<string[]>([])
 function load() {
-  if (import.meta.server) return
+  if (!import.meta.client) return
   try {
-    symbols.value = JSON.parse(localStorage.getItem('favoritesSymbols') || '[]')
+    const stored = localStorage.getItem('favoritesSymbols')
+    symbols.value = stored ? JSON.parse(stored) : []
   } catch {
     symbols.value = []
   }
@@ -122,7 +123,7 @@ function refresh() {
   load()
 }
 function clearAll() {
-  if (import.meta.server) return
+  if (!import.meta.client) return
   localStorage.setItem('favoritesSymbols', '[]')
   symbols.value = []
 }

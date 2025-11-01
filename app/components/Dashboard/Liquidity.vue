@@ -197,6 +197,7 @@ function timeAgo(ts: number) {
 /** === History helpers (localStorage) === */
 function loadHistory(sym: string): Sample[] {
   if (import.meta.server) return []
+  if (!import.meta.client) return []
   try {
     const raw = localStorage.getItem(LS_KEY(sym)) || '[]'
     const arr = JSON.parse(raw) as Sample[]
@@ -207,10 +208,12 @@ function loadHistory(sym: string): Sample[] {
   }
 }
 function saveHistory(sym: string, arr: Sample[]) {
-  if (import.meta.server) return
+  if (import.meta.server || !import.meta.client) return
   try {
     localStorage.setItem(LS_KEY(sym), JSON.stringify(arr))
-  } catch {}
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 /** === Fetch one snapshot (instantané) === */
@@ -282,11 +285,11 @@ async function sampleNow() {
 }
 
 /** === Timer (peu fréquent) === */
-let timer: number | null = null
+let timer: ReturnType<typeof setInterval> | null = null
 const start = () => {
   stop()
-  if ((props.sampleEveryMs ?? 0) > 0) {
-    timer = window.setInterval(sampleNow, props.sampleEveryMs!) as unknown as number
+  if ((props.sampleEveryMs ?? 0) > 0 && import.meta.client) {
+    timer = setInterval(sampleNow, props.sampleEveryMs!)
   }
 }
 const stop = () => {
@@ -298,11 +301,13 @@ const stop = () => {
 
 /** === Reset history === */
 function resetHistory() {
-  if (import.meta.server) return
+  if (import.meta.server || !import.meta.client) return
   for (const s of props.symbols) {
     try {
       localStorage.removeItem(LS_KEY(s))
-    } catch {}
+    } catch {
+      // Ignore storage errors
+    }
   }
   sampleNow()
 }

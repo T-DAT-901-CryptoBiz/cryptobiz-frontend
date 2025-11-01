@@ -7,10 +7,18 @@ export function useFuturesUniverse() {
   onMounted(async () => {
     try {
       const res = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo')
-      const j = await res.json()
+      const j = (await res.json()) as {
+        symbols?: Array<{
+          contractType?: string
+          quoteAsset?: string
+          pair?: string
+          symbol?: string
+        }>
+      }
       const list: string[] = (j?.symbols || [])
-        .filter((s: any) => s.contractType === 'PERPETUAL' && s.quoteAsset === 'USDT')
-        .map((s: any) => s.pair || s.symbol)
+        .filter((s) => s.contractType === 'PERPETUAL' && s.quoteAsset === 'USDT')
+        .map((s) => s.pair || s.symbol || '')
+        .filter(Boolean)
       symbols.value = Array.from(new Set(list))
     } catch {
       symbols.value = []

@@ -1,8 +1,23 @@
 import { defineEventHandler, getQuery, setResponseHeader } from 'h3'
 
-type Listing = { data?: { children?: Array<{ data?: any }> } }
+type RedditPostData = {
+  id?: string
+  title?: string
+  subreddit?: string
+  author?: string
+  over_18?: boolean
+  url?: string
+  permalink?: string
+  created_utc?: number
+  score?: number
+  num_comments?: number
+  thumbnail?: string
+  selftext?: string
+}
 
-function norm(d: any) {
+type Listing = { data?: { children?: Array<{ data?: RedditPostData }> } }
+
+function norm(d: RedditPostData | null | undefined) {
   if (!d?.id || !d.title || !d.subreddit || !d.author || d.over_18) return null
   return {
     id: d.id,
@@ -28,7 +43,7 @@ async function fetchListing(url: string) {
       },
     })
     const children = json?.data?.children || []
-    return children.map((c) => norm(c.data)).filter(Boolean) as any[]
+    return children.map((c) => norm(c.data)).filter(Boolean) as Array<ReturnType<typeof norm>>
   } catch {
     return []
   }
@@ -66,7 +81,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const lists = await Promise.all(urls.map((u) => fetchListing(u)))
-  const map = new Map<string, any>()
+  const map = new Map<string, NonNullable<ReturnType<typeof norm>>>()
   for (const arr of lists) for (const p of arr) map.set(p.id, p)
 
   const merged = [...map.values()]

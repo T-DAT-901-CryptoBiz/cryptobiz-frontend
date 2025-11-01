@@ -22,12 +22,15 @@ export function useExchangeInfoSpot() {
     try {
       const r = await exchangeInfo()
       const j = (r.data.value ?? {}) as ExchangeInfo
-      const arr = (j.symbols ?? []).map((s) => ({
-        symbol: String(s.symbol || ''),
-        baseAsset: (s as any).baseAsset,
-        quoteAsset: (s as any).quoteAsset,
-        onboardDate: typeof (s as any).onboardDate === 'number' ? (s as any).onboardDate : null,
-      }))
+      const arr = (j.symbols ?? []).map((s) => {
+        const sym = s as SpotSymbolMeta & Record<string, unknown>
+        return {
+          symbol: String(sym.symbol || ''),
+          baseAsset: sym.baseAsset,
+          quoteAsset: sym.quoteAsset,
+          onboardDate: typeof sym.onboardDate === 'number' ? sym.onboardDate : null,
+        }
+      })
       meta.value = arr
     } catch {
       meta.value = []

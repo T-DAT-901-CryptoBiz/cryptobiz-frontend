@@ -106,11 +106,11 @@ const HIGHLIGHTS = new Set(['USDT', 'FDUSD', 'USDC', 'BUSD', 'TUSD', 'USD', 'BTC
 const aggEntries = computed<[string, number][]>(() => {
   const agg: Record<string, number> = {}
   for (const r of rows.value) {
-    const sym = (r as any).symbol as string
+    const sym = r.symbol
     const qRaw =
       sym2Quote.value[sym] || (sym.match(/USDT|FDUSD|USDC|BUSD|TUSD|USD|BTC|ETH$/)?.[0] ?? 'OTHER')
     const quote = HIGHLIGHTS.has(qRaw) ? qRaw : 'OTHER'
-    const v = Number((r as any).quoteVolume || 0) || 0
+    const v = Number(r.quoteVolume || 0) || 0
     agg[quote] = (agg[quote] || 0) + v
   }
   return Object.entries(agg).sort((a, b) => b[1] - a[1])

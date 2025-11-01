@@ -32,10 +32,7 @@
         class="mt-1 text-sm font-semibold inline-flex items-center gap-1.5"
         :class="pct24 >= 0 ? 'text-emerald-400' : 'text-rose-400'"
       >
-        <Icon
-          :name="pct24 >= 0 ? 'lucide:trending-up' : 'lucide:trending-down'"
-          class="h-4 w-4"
-        />
+        <Icon :name="pct24 >= 0 ? 'lucide:trending-up' : 'lucide:trending-down'" class="h-4 w-4" />
         <span class="tabular-nums">{{ signPct }}</span>
         <span class="text-white/50 tabular-nums"> ({{ changeAbsSign }}) </span>
       </p>

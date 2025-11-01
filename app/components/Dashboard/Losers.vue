@@ -60,7 +60,7 @@ const clean = computed(() => {
     if (!cur) byBase.set(base, r)
     else {
       const cq = split(String(cur.symbol)).quote
-      if (qp(quote) > qp(cq) || (qp(quote) === qp(cq) && qv > num((cur as any).quoteVolume))) {
+      if (qp(quote) > qp(cq) || (qp(quote) === qp(cq) && qv > num(cur.quoteVolume))) {
         byBase.set(base, r)
       }
     }

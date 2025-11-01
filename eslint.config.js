@@ -23,6 +23,11 @@ export default [
         sourceType: 'module',
         extraFileExtensions: ['.vue'],
       },
+      globals: {
+        ...globals.browser,
+        ...globals.es2021,
+        $fetch: 'readonly',
+      },
     },
     plugins: { vue },
     rules: {

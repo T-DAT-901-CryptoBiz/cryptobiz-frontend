@@ -7,7 +7,7 @@
         <template v-if="isUniverseLoading">
           <span class="inline-block h-4 w-16 rounded bg-white/10 animate-pulse" />
         </template>
-        <template v-else> Rows: {{ pool.length.toLocaleString() }}</template>
+        <template v-else> Rows: {{ sortedPool.length.toLocaleString() }}</template>
       </div>
     </div>
 
@@ -116,7 +116,7 @@
             <td class="px-4 py-3"><div class="h-9 w-40 rounded bg-white/5 animate-pulse"></div></td>
           </tr>
 
-          <tr v-if="!isPageLoading && !sorted.length && !pool.length">
+          <tr v-if="!isPageLoading && !sorted.length && !sortedPool.length">
             <td colspan="6" class="px-4 py-6 text-center text-white/60">Aucune paire trouvée</td>
           </tr>
         </tbody>
@@ -126,7 +126,7 @@
     <div class="px-4 py-3 border-t border-white/5">
       <MarketPagination
         :page="page"
-        :total="pool.length"
+        :total="sortedPool.length"
         :per-page="perPage"
         @update:page="page = $event"
         @update:perPage="perPage = $event"
@@ -151,8 +151,21 @@ const props = withDefaults(
     autoRefreshMs?: number
     market?: 'spot' | 'futures' | 'auto'
     futuresSet?: string[]
+    all24hData?: Array<{
+      symbol: string
+      lastPrice?: string
+      priceChangePercent?: string
+      quoteVolume?: string
+    }>
   }>(),
-  { symbols: undefined, pageSize: 50, autoRefreshMs: 0, market: 'spot', futuresSet: () => [] },
+  {
+    symbols: undefined,
+    pageSize: 50,
+    autoRefreshMs: 0,
+    market: 'spot',
+    futuresSet: () => [],
+    all24hData: undefined,
+  },
 )
 
 const router = useRouter()
@@ -169,17 +182,73 @@ const sortDir = ref<'asc' | 'desc'>('desc')
 const page = ref(1)
 const perPage = ref(props.pageSize)
 
-const start = computed(() => (page.value - 1) * perPage.value)
-const end = computed(() => start.value + perPage.value)
-const viewSymbols = computed(() => pool.value.slice(start.value, end.value))
-
 const loading = ref(false)
 const cache = reactive(new Map<string, Row>())
 
+// Initialiser le cache avec les données de all24hData si disponibles
+watch(
+  () => props.all24hData,
+  (data) => {
+    if (data && Array.isArray(data)) {
+      for (const ticker of data) {
+        if (ticker.symbol && !cache.has(ticker.symbol)) {
+          // Créer une Row partielle avec les données disponibles
+          cache.set(ticker.symbol, {
+            symbol: ticker.symbol,
+            price: Number(ticker.lastPrice ?? 0),
+            ch24: Number(ticker.priceChangePercent ?? 0),
+            vol24: Number(ticker.quoteVolume ?? 0),
+            spark: [], // Sera rempli lors du chargement complet
+          })
+        }
+      }
+    }
+  },
+  { immediate: true },
+)
+
+// Trier le pool complet basé sur les données en cache
+const sortedPool = computed(() => {
+  const poolSymbols = [...pool.value]
+  // Trier les symboles basés sur les données en cache
+  poolSymbols.sort((symA, symB) => {
+    const rowA = cache.get(symA)
+    const rowB = cache.get(symB)
+
+    // Si une donnée manque, mettre à la fin
+    if (!rowA && !rowB) return 0
+    if (!rowA) return 1
+    if (!rowB) return -1
+
+    const va = rowA[sortKey.value]
+    const vb = rowB[sortKey.value]
+    return (sortDir.value === 'asc' ? 1 : -1) * (va > vb ? 1 : va < vb ? -1 : 0)
+  })
+  return poolSymbols
+})
+
+// Paginer après le tri
+const start = computed(() => (page.value - 1) * perPage.value)
+const end = computed(() => start.value + perPage.value)
+const viewSymbols = computed(() => sortedPool.value.slice(start.value, end.value))
+
 const rows = computed(() => {
-  const arr = viewSymbols.value.map((s) => cache.get(s)).filter(Boolean) as Row[]
+  const arr: Row[] = []
+  for (const sym of viewSymbols.value) {
+    const cached = cache.get(sym)
+    if (cached) {
+      // Si les sparklines sont vides, charger les données complètes
+      if (!cached.spark || cached.spark.length === 0) {
+        void loadRowData(sym)
+      }
+      arr.push(cached)
+    }
+  }
+  // Déclencher le chargement des données manquantes
   const missing = viewSymbols.value.filter((s) => !cache.has(s))
-  if (missing.length) loadPage()
+  if (missing.length) {
+    void loadAllDataForSort()
+  }
   return arr
 })
 
@@ -206,7 +275,7 @@ async function makeRow(sym: string): Promise<Row> {
           sym,
         )}&contractType=PERPETUAL&interval=1h&limit=168`,
       ).then((r) => r.json())
-      spark = Array.isArray(k) ? k.map((c: any[]) => Number(c[4])) : []
+      spark = Array.isArray(k) ? k.map((c: unknown[]) => Number(Array.isArray(c) ? c[4] : 0)) : []
     } catch {
       spark = []
     }
@@ -238,26 +307,18 @@ async function makeRow(sym: string): Promise<Row> {
   }
 }
 
-async function loadPage() {
-  if (loading.value) return
-  loading.value = true
-  try {
-    const syms = viewSymbols.value.filter((s) => !cache.has(s))
-    const res = await Promise.allSettled(syms.map(makeRow))
-    res.forEach((p, i) => {
-      if (p.status === 'fulfilled') cache.set(syms[i], p.value)
-    })
-  } finally {
-    loading.value = false
-  }
-}
-
 let liveId: number | null = null
 onMounted(() => {
   if ((props.autoRefreshMs ?? 0) > 0) {
-    liveId = globalThis.setInterval(() => loadPage(), props.autoRefreshMs!)
+    liveId = globalThis.setInterval(() => {
+      void loadAllDataForSort()
+    }, props.autoRefreshMs!)
   }
   loadFavorites()
+  // Charger les sparklines après le montage
+  setTimeout(() => {
+    void loadSparklinesForCurrentPage()
+  }, 200)
 })
 onBeforeUnmount(() => {
   if (liveId !== null) globalThis.clearInterval(liveId)
@@ -267,36 +328,120 @@ watch(
   (ms) => {
     if (liveId !== null) globalThis.clearInterval(liveId)
     liveId = null
-    if ((ms ?? 0) > 0) liveId = globalThis.setInterval(() => loadPage(), ms!)
+    if ((ms ?? 0) > 0) {
+      liveId = globalThis.setInterval(() => {
+        void loadAllDataForSort()
+      }, ms!)
+    }
   },
 )
 
+// Charger les données complètes d'une row (incluant sparklines)
+async function loadRowData(sym: string) {
+  if (import.meta.server) return
+  try {
+    const fullRow = await makeRow(sym)
+    cache.set(sym, fullRow)
+  } catch {
+    // Ignore errors
+  }
+}
+
+// Charger les sparklines pour la page courante
+async function loadSparklinesForCurrentPage() {
+  if (import.meta.server) return
+  const symsToLoad = viewSymbols.value.filter((s) => {
+    const cached = cache.get(s)
+    return cached && (!cached.spark || cached.spark.length === 0)
+  })
+
+  if (symsToLoad.length > 0) {
+    // Charger par lots pour éviter de surcharger
+    const batchSize = 10
+    for (let i = 0; i < symsToLoad.length; i += batchSize) {
+      const batch = symsToLoad.slice(i, i + batchSize)
+      await Promise.allSettled(batch.map(loadRowData))
+    }
+  }
+}
+
+// Charger les données nécessaires pour le tri et l'affichage
+async function loadAllDataForSort() {
+  if (loading.value) return
+  loading.value = true
+  try {
+    // Priorité 1: Charger les données complètes de la page courante (avec sparklines)
+    // Inclure les symboles qui n'ont pas de données OU qui n'ont pas de sparklines
+    const currentPageSyms = viewSymbols.value.filter((s) => {
+      const cached = cache.get(s)
+      return !cached || !cached.spark || cached.spark.length === 0
+    })
+
+    if (currentPageSyms.length > 0) {
+      // Charger d'abord la page courante en priorité
+      const batchSize = 10
+      for (let i = 0; i < currentPageSyms.length; i += batchSize) {
+        const batch = currentPageSyms.slice(i, i + batchSize)
+        const res = await Promise.allSettled(batch.map(makeRow))
+        res.forEach((p, idx) => {
+          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+        })
+      }
+    }
+
+    // Priorité 2: Pour améliorer le tri, charger aussi les données des premières pages
+    // On prend les premiers 500 symboles du pool (avant tri) pour avoir des données à trier
+    const previewLimit = Math.min(500, pool.value.length)
+    const previewSyms = pool.value.slice(0, previewLimit).filter((s) => !cache.has(s))
+
+    if (previewSyms.length > 0) {
+      // Charger par lots pour éviter de surcharger l'API
+      const batchSize = 50
+      for (let i = 0; i < previewSyms.length; i += batchSize) {
+        const batch = previewSyms.slice(i, i + batchSize)
+        const res = await Promise.allSettled(batch.map(makeRow))
+        res.forEach((p, idx) => {
+          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+        })
+      }
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
 watch(
-  [pool, perPage],
+  [pool, perPage, sortKey, sortDir],
   () => {
     page.value = 1
-    cache.clear()
-    loadPage()
+    void loadAllDataForSort()
+    // Charger les sparklines après le chargement initial
+    setTimeout(() => {
+      void loadSparklinesForCurrentPage()
+    }, 100)
   },
   { immediate: true },
 )
-watch(page, () => loadPage())
-
-const sorted = computed(() => {
-  const arr = [...rows.value]
-  arr.sort((a, b) => {
-    const va = a[sortKey.value],
-      vb = b[sortKey.value]
-    return (sortDir.value === 'asc' ? 1 : -1) * (va > vb ? 1 : va < vb ? -1 : 0)
-  })
-  return arr
+watch(page, () => {
+  void loadAllDataForSort()
+  // Charger aussi les sparklines pour la nouvelle page
+  setTimeout(() => {
+    void loadSparklinesForCurrentPage()
+  }, 100)
 })
+
+// Les données sont déjà triées via sortedPool, donc on retourne rows directement
+const sorted = computed(() => rows.value)
+
 function setSort(k: keyof Row) {
-  if (sortKey.value === k) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
-  else {
+  if (sortKey.value === k) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
     sortKey.value = k
     sortDir.value = 'desc'
   }
+  // Retourner à la page 1 lors du changement de tri
+  page.value = 1
 }
 
 const isUniverseLoading = computed(() => !props.symbols?.length && universe.value.length === 0)
@@ -305,7 +450,7 @@ const missingCount = computed(() => Math.max(0, viewSymbols.value.length - rows.
 
 const favorites = ref<Set<string>>(new Set())
 function loadFavorites() {
-  if (import.meta.server) return
+  if (import.meta.server || !import.meta.client) return
   try {
     const raw = localStorage.getItem('favoritesSymbols') || '[]'
     favorites.value = new Set(JSON.parse(raw) as string[])

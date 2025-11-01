@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   row: { base: string; last: number; chg: number }
 }>()
 

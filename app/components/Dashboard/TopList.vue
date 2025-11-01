@@ -52,7 +52,7 @@
 <script setup lang="ts">
 type Item = { symbol: string; label?: string; value: string; valueClass?: string }
 
-const props = defineProps<{
+defineProps<{
   title: string
   items?: Item[]
   loading?: boolean

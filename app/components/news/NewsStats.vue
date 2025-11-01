@@ -1,8 +1,8 @@
 <template>
   <section class="rounded-2xl bg-neutral-900/60 p-4 border border-white/5 space-y-4">
     <header class="flex items-center justify-between mb-4">
-    <h3 class="font-semibold">News Stats</h3>
-    <NuxtLink to="/news" class="text-xs text-white/60 hover:text-white/90">News</NuxtLink>
+      <h3 class="font-semibold">News Stats</h3>
+      <NuxtLink to="/news" class="text-xs text-white/60 hover:text-white/90">News</NuxtLink>
     </header>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="rounded-xl bg-white/5 border border-white/10 p-3">

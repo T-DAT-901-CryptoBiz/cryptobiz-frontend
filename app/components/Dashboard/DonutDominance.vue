@@ -113,7 +113,7 @@ const stable = new Set(['USDT', 'FDUSD', 'USDC', 'BUSD', 'TUSD', 'USD'])
 const pctClamped = computed(() => Math.max(0, Math.min(100, pct.value)))
 
 const btcVol = computed(() =>
-  rows.value.reduce((acc, r: any) => {
+  rows.value.reduce((acc, r) => {
     const base = sym2Base.value[r.symbol]
     const quote = sym2Quote.value[r.symbol]
     if (base === 'BTC' && stable.has(quote)) acc += Number(r.quoteVolume || 0)
@@ -122,7 +122,7 @@ const btcVol = computed(() =>
 )
 
 const totalStable = computed(() =>
-  rows.value.reduce((acc, r: any) => {
+  rows.value.reduce((acc, r) => {
     const quote = sym2Quote.value[r.symbol]
     if (stable.has(quote)) acc += Number(r.quoteVolume || 0)
     return acc
@@ -158,11 +158,6 @@ function arcPath(startAngle: number, endAngle: number) {
 }
 
 const bgArc = computed(() => arcPath(180, 0))
-const fgArc = computed(() => {
-  const clamped = Math.max(0, Math.min(100, pct.value))
-  const endAngle = 180 - (clamped / 100) * 180
-  return arcPath(180, endAngle)
-})
 
 const needle = computed(() => {
   const clamped = Math.max(0, Math.min(100, pct.value))

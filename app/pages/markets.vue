@@ -10,7 +10,13 @@
       />
     </ClientOnly>
 
-    <MarketTablePro :symbols="filtered" :page-size="20" market="auto" :futures-set="futUni" />
+    <MarketTablePro
+      :symbols="filtered"
+      :page-size="20"
+      market="auto"
+      :futures-set="futUni"
+      :all24h-data="rows"
+    />
   </div>
 </template>
 
@@ -28,8 +34,8 @@ function onSearch(v: string) {
   q.value = (v ?? '').trim()
 }
 function onFilterChange(p: { category: string; tag: string }) {
-  cat.value = (p.category as any) || 'all'
-  tag.value = (p.tag as any) || 'all'
+  cat.value = (p.category as 'favorites' | 'spot' | 'futures' | 'all') || 'all'
+  tag.value = (p.tag as 'all' | 'trending' | 'gainers' | 'losers' | 'volume' | string) || 'all'
 }
 
 const { universe: spotUni } = useSymbolsUniverse() // Ex: ['BTCUSDT', ...]
@@ -104,9 +110,15 @@ const baseUniverse = computed<string[]>(() => {
   if (cat.value === 'favorites') {
     if (import.meta.server) return []
     let favs: string[] = []
-    try {
-      favs = JSON.parse(localStorage.getItem('favoritesSymbols') || '[]')
-    } catch {}
+    if (import.meta.client) {
+      try {
+        const stored = localStorage.getItem('favoritesSymbols')
+        favs = stored ? JSON.parse(stored) : []
+      } catch {
+        // Ignore parsing errors
+        favs = []
+      }
+    }
     const favSet = new Set(favs)
     return Array.from(new Set([...spotUni.value, ...futUni.value])).filter((s) => favSet.has(s))
   }
@@ -116,11 +128,11 @@ const baseUniverse = computed<string[]>(() => {
 const spotMetrics = computed(() => {
   const map = new Map<string, { pct: number; vol: number; trades: number }>()
   for (const t of rows.value) {
-    const sym = (t as any).symbol as string
+    const sym = t.symbol
     map.set(sym, {
-      pct: Number((t as any).priceChangePercent ?? 0),
-      vol: Number((t as any).quoteVolume ?? 0),
-      trades: Number((t as any).count ?? 0), // "count" ~ nb de trades 24h
+      pct: Number(t.priceChangePercent ?? 0),
+      vol: Number(t.quoteVolume ?? 0),
+      trades: Number(t.count ?? 0), // "count" ~ nb de trades 24h
     })
   }
   return map

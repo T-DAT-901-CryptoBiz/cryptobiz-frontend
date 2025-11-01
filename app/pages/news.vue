@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <ClientOnly>
-      <NewsHighlights/>
+      <NewsHighlights />
       <MarketCategoryBar
         v-model="categoryUI"
         v-model:tagValue="tagUI"
@@ -161,7 +161,7 @@ import {
   type ListQuery,
   type Article,
 } from '~/composables/useArticles'
-import NewsHighlights from "~/components/news/NewsHighlights.vue";
+import NewsHighlights from '~/components/news/NewsHighlights.vue'
 
 const q = ref('')
 const categoryUI = ref<'favorites' | 'all'>('all')
@@ -171,8 +171,8 @@ function onSearch(v: string) {
   q.value = (v ?? '').trim()
 }
 function onFilterChange(p: { category: string; tag: string }) {
-  categoryUI.value = (p.category as any) || 'all'
-  tagUI.value = (p.tag as any) || 'all'
+  categoryUI.value = (p.category as 'favorites' | 'all') || 'all'
+  tagUI.value = (p.tag as 'all' | 'trending' | 'breaking' | 'unread') || 'all'
 }
 
 const newsCats = [
@@ -229,23 +229,9 @@ watch([q, tagUI, categoryUI, perPage], () => {
 
 function open(n: Article) {
   markRead(n.id)
-  window.open(n.link, '_blank', 'noopener,noreferrer')
-}
-
-function toggleSort(k: 'publish_date' | 'create_time') {
-  if (k === 'create_time') tagUI.value = 'trending'
-  else if (tagUI.value === 'trending') tagUI.value = 'all'
-}
-
-function timeAgo(iso: string) {
-  const d = new Date(iso).getTime()
-  const diff = Math.max(0, Date.now() - d)
-  const m = Math.floor(diff / 60000)
-  if (m < 60) return `${m}m`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h`
-  const dd = Math.floor(h / 24)
-  return `${dd}d`
+  if (import.meta.client) {
+    window.open(n.link, '_blank', 'noopener,noreferrer')
+  }
 }
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -257,10 +243,14 @@ function formatDate(iso: string) {
   return `${y}-${M}-${D} ${h}:${m}`
 }
 function favicon(u: string) {
+  if (!import.meta.client) {
+    return `https://icons.duckduckgo.com/ip3/example.com.ico`
+  }
   try {
     const host = new URL(u).hostname
     return `https://icons.duckduckgo.com/ip3/${host}.ico`
   } catch {
+    // Ignore URL parsing errors
     return `https://icons.duckduckgo.com/ip3/example.com.ico`
   }
 }
@@ -365,17 +355,19 @@ function coerceArray(v: unknown): string[] {
     if (!s) return []
     if (s.startsWith('[') && s.endsWith(']')) {
       try {
-        return (JSON.parse(s) as any[]).map(String)
-      } catch {}
+        return (JSON.parse(s) as string[]).map(String)
+      } catch {
+        // Ignore parsing errors
+      }
     }
-    return s.split(/[,\|\s]+/).filter(Boolean)
+    return s.split(/[,\s|]+/).filter(Boolean)
   }
   return []
 }
 
 function toSymbol(raw: string): string | null {
   if (!raw) return null
-  const clean = raw.replace(/[\$\#]/g, '').trim()
+  const clean = raw.replace(/[$#]/g, '').trim()
   const k = normStr(clean)
   if (NAME2SYM[k]) return NAME2SYM[k]
   const m = clean.match(/^[A-Za-z0-9]{2,10}$/)?.[0]
@@ -386,21 +378,23 @@ function toSymbol(raw: string): string | null {
   return null
 }
 
-function normTickersFromNews(n: any): string[] {
+function normTickersFromNews(n: Article): string[] {
   const bag = new Set<string>()
 
-  coerceArray(n?.tickers).forEach((t) => {
+  coerceArray((n as Record<string, unknown>)?.tickers).forEach((t) => {
     const s = toSymbol(String(t))
     if (s) bag.add(s)
   })
-  coerceArray((n as any)?.categories || (n as any)?.category).forEach((t) => {
+  coerceArray(
+    (n as Record<string, unknown>)?.categories || (n as Record<string, unknown>)?.category,
+  ).forEach((t) => {
     const s = toSymbol(String(t))
     if (s) bag.add(s)
   })
 
   const text = [n?.title, n?.description].filter(Boolean).join(' ')
   if (text) {
-    const words = text.match(/[\$\#]?[A-Za-z][A-Za-z0-9]{1,9}/g) || []
+    const words = text.match(/[$#]?[A-Za-z][A-Za-z0-9]{1,9}/g) || []
     words.forEach((w) => {
       const s = toSymbol(w)
       if (s) bag.add(s)

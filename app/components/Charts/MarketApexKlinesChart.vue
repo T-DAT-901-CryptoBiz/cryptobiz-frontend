@@ -152,7 +152,6 @@ watch(
   },
 )
 
-type AnyRow = any
 type Ohlcv = { t: number; o: number; h: number; l: number; c: number; v: number }
 
 const rows = ref<Ohlcv[]>([])
@@ -161,7 +160,7 @@ const error = ref<unknown>(null)
 const effectiveFromSec = ref<number | null>(null)
 const effectiveToSec = ref<number | null>(null)
 
-function ensureMs(t: any): number {
+function ensureMs(t: unknown): number {
   if (t == null) return NaN
   if (typeof t === 'string') {
     const d = Date.parse(t)
@@ -170,23 +169,26 @@ function ensureMs(t: any): number {
   const n = Number(t)
   return Number.isFinite(n) ? (n < 1e12 ? n * 1000 : n) : NaN
 }
-function normalizeRow(row: AnyRow): Ohlcv | null {
+function normalizeRow(row: unknown): Ohlcv | null {
   try {
     if (Array.isArray(row)) {
       const [tt, o, h, l, c, v] = row
       const t = ensureMs(tt)
       if (Number.isFinite(t)) return { t, o: +o, h: +h, l: +l, c: +c, v: +(v ?? 0) }
     } else if (row && typeof row === 'object') {
-      const tRaw = row.timestamp ?? row.t ?? row.time ?? row.ts ?? row.open_time ?? row.openTime
-      const o = row.open ?? row.o ?? row.open_price
-      const h = row.high ?? row.h ?? row.high_price
-      const l = row.low ?? row.l ?? row.low_price
-      const c = row.close ?? row.c ?? row.close_price
-      const v = row.volume ?? row.v ?? row.volume_base ?? 0
+      const r = row as Record<string, unknown>
+      const tRaw = r.timestamp ?? r.t ?? r.time ?? r.ts ?? r.open_time ?? r.openTime
+      const o = r.open ?? r.o ?? r.open_price
+      const h = r.high ?? r.h ?? r.high_price
+      const l = r.low ?? r.l ?? r.low_price
+      const c = r.close ?? r.c ?? r.close_price
+      const v = r.volume ?? r.v ?? r.volume_base ?? 0
       const t = ensureMs(tRaw)
       if (Number.isFinite(t)) return { t, o: +o, h: +h, l: +l, c: +c, v: +v }
     }
-  } catch {}
+  } catch {
+    // Ignore parsing errors
+  }
   return null
 }
 
@@ -197,7 +199,7 @@ async function fetchOHLCV(fromSec: number, toSec: number) {
     to: String(toSec),
   })
   const url = `${BASE_URL}/api/v1/klines/${symbol.value}/${interval.value}/ohlcv?${q.toString()}`
-  const resp = await $fetch<AnyRow[]>(url, { method: 'GET' })
+  const resp = await $fetch<unknown[]>(url, { method: 'GET' })
   const mapped = (Array.isArray(resp) ? resp : []).map(normalizeRow).filter(Boolean) as Ohlcv[]
   mapped.sort((a, b) => a.t - b.t)
   return { mapped, url }
@@ -206,7 +208,10 @@ async function fetchOHLCV(fromSec: number, toSec: number) {
 async function fetchStatsLatestSec(): Promise<number | null> {
   try {
     const url = `${BASE_URL}/api/v1/klines/${symbol.value}/${interval.value}/stats`
-    const s = await $fetch<any>(url, { method: 'GET' })
+    const s = (await $fetch(url, { method: 'GET' })) as {
+      date_range?: { end?: unknown }
+      latest_kline?: { close_time?: unknown }
+    }
     const end = s?.date_range?.end ?? s?.latest_kline?.close_time
     const ms = typeof end === 'string' ? Date.parse(end) : typeof end === 'number' ? end : NaN
     return Number.isFinite(ms) ? Math.floor((ms < 1e12 ? ms * 1000 : ms) / 1000) : null
@@ -267,12 +272,6 @@ const series = computed(() => [
   { name: 'Price', type: 'candlestick' as const, data: candleSeries.value },
   { name: 'Volume', type: 'column' as const, data: volumeSeries.value },
 ])
-
-const lastClose = computed(() => (displayed.value.length ? displayed.value.at(-1)!.c : 0))
-const firstOpen = computed(() => (displayed.value.length ? displayed.value[0]!.o : 0))
-const pctChange = computed(() =>
-  firstOpen.value ? (lastClose.value / firstOpen.value - 1) * 100 : 0,
-)
 
 const baseSymbol = computed(
   () => symbol.value?.replace(/(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/, '') || symbol.value,
@@ -371,13 +370,16 @@ const options = computed(() => ({
     },
     zoom: { enabled: true, type: 'x', autoScaleYaxis: true },
     events: {
-      beforeZoom: (_ctx: any, { xaxis }: { xaxis: { min: number; max: number } }) => {
+      beforeZoom: (
+        _ctx: unknown,
+        { xaxis }: { xaxis: { min: number; max: number } },
+      ): { xaxis: { min: number; max: number } } | undefined => {
         if ((!xaxis?.min && xaxis?.min !== 0) || (!xaxis?.max && xaxis?.max !== 0)) return
         let { min, max } = clampZoomSpan(xaxis.min, xaxis.max)
         ;({ min, max } = clampToData(min, max))
         return { xaxis: { min, max } }
       },
-      zoomed: (_ctx: any, { xaxis }: { xaxis: { min: number; max: number } }) => {
+      zoomed: (_ctx: unknown, { xaxis }: { xaxis: { min: number; max: number } }): void => {
         if ((!xaxis?.min && xaxis?.min !== 0) || (!xaxis?.max && xaxis?.max !== 0)) return
         let { min, max } = clampZoomSpan(xaxis.min, xaxis.max)
         ;({ min, max } = clampToData(min, max))
@@ -462,9 +464,26 @@ const options = computed(() => ({
     x: { show: true, format: 'dd MMM yyyy HH:mm' },
     y: [
       {
-        formatter: (v: number, { dataPointIndex, w }: any) => {
+        formatter: (
+          v: number,
+          {
+            dataPointIndex,
+            w,
+          }: {
+            dataPointIndex: number
+            w?: {
+              config?: {
+                series?: Array<{
+                  data?: Array<{
+                    y?: number | number[]
+                  }>
+                }>
+              }
+            }
+          },
+        ) => {
           const ohlc = w?.config?.series?.[0]?.data?.[dataPointIndex]?.y
-          if (!ohlc) return formatPrice(v)
+          if (!Array.isArray(ohlc)) return formatPrice(v)
           const [o, h, l, c] = ohlc
           return `O ${formatPrice(o)}  H ${formatPrice(h)}  L ${formatPrice(l)}  C ${formatPrice(c)}`
         },
