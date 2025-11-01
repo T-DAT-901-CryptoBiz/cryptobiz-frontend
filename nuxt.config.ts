@@ -7,6 +7,8 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui', '@nuxt/image', '@nuxt/eslint', 'unplugin-icons/nuxt'],
   runtimeConfig: {
     binanceApiKey: '',
+    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     public: {
       binanceRestBase: 'https://api.binance.com',
       binanceWsBase: 'wss://stream.binance.com:9443/ws',

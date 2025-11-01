@@ -52,7 +52,7 @@ function normalizeRow(row: unknown): OhlcvPoint | null {
   return null
 }
 
-export function useKlines(params: Partial<FetchParams>) {
+export function useKlinesApi(params: Partial<FetchParams>) {
   const symbol = ref(params.symbol ?? 'BTCUSDT')
   const interval = ref<Interval>(params.interval ?? '1h')
   const from = ref<number | undefined>(params.from)

@@ -103,6 +103,10 @@
         </div>
         <div class="ml-auto flex items-center gap-2">
           <slot name="top-actions" />
+          <UButton v-if="isAuthenticated" variant="ghost" size="sm" @click="handleLogout">
+            <Icon name="lucide:log-out" class="w-4 h-4 mr-2" />
+            {{ user?.name || 'User' }}
+          </UButton>
         </div>
       </header>
 
@@ -114,13 +118,20 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useState } from '#app'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const route = useRoute()
+const router = useRouter()
+const { user, isAuthenticated, logout } = useAuth()
 const isMobileOpen = useState<boolean>('sb:mobileOpen', () => false)
 const isCollapsed = useState<boolean>('sb:collapsed', () => false)
+
+async function handleLogout() {
+  await logout()
+  await router.push('/login')
+}
 
 type NavItem = { to: string; label: string; icon: string }
 const nav: NavItem[] = [
