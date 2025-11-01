@@ -2,7 +2,10 @@
   <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
     <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-sm text-white/80">Popular</span>
+        <div>
+          <span class="text-sm text-white/80">Popular</span>
+          <span class="text-xs text-white/50 ml-2">USDT</span>
+        </div>
       </div>
 
       <div v-if="anyPending" class="space-y-3">
@@ -48,7 +51,10 @@
 
     <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-sm text-white/80">The + on the rise</span>
+        <div>
+          <span class="text-sm text-white/80">The + on the rise</span>
+          <span class="text-xs text-white/50 ml-2">USDT</span>
+        </div>
       </div>
 
       <div v-if="anyPending" class="space-y-3">
@@ -94,7 +100,10 @@
 
     <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-sm text-white/80">Best volume</span>
+        <div>
+          <span class="text-sm text-white/80">Best volume</span>
+          <span class="text-xs text-white/50 ml-2">USDT</span>
+        </div>
       </div>
 
       <div v-if="anyPending" class="space-y-3">
@@ -141,13 +150,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useAll24h } from '~/composables/useAll24h'
 import { useBinanceMarket } from '~/composables/useBinanceMarket'
 import type { Ticker24h, ExchangeInfo } from '~/types/binance'
 
-const { rows, pending } = useAll24h()
+const { rows, pending, refresh } = useAll24h()
 const anyPending = computed(() => pending.value)
+
+// Rafraîchir les données périodiquement pour rester synchronisé avec le tableau
+let refreshInterval: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  // Rafraîchir toutes les 30 secondes pour rester synchronisé
+  if (import.meta.client) {
+    refreshInterval = setInterval(() => {
+      void refresh()
+    }, 30000)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (refreshInterval) clearInterval(refreshInterval)
+})
 
 const { exchangeInfo } = useBinanceMarket()
 const sym2Base = ref<Record<string, string>>({})
@@ -261,24 +286,32 @@ const filtered = computed<ViewRow[]>(() => {
 
 const topN = 3
 
-const popularRows = computed(() =>
-  filtered.value
+// Filtrer uniquement USDT
+const filterUSDT = (items: ViewRow[]) => {
+  return items.filter((item) => item.quote === 'USDT')
+}
+
+const popularRows = computed(() => {
+  const usdtOnly = filterUSDT(filtered.value)
+  return usdtOnly
     .slice()
     .sort((a, b) => b.trades - a.trades)
-    .slice(0, topN),
-)
+    .slice(0, topN)
+})
 
-const topGainersRows = computed(() =>
-  filtered.value
+const topGainersRows = computed(() => {
+  const usdtOnly = filterUSDT(filtered.value)
+  return usdtOnly
     .slice()
     .sort((a, b) => b.pct - a.pct)
-    .slice(0, topN),
-)
+    .slice(0, topN)
+})
 
-const topVolumeRows = computed(() =>
-  filtered.value
+const topVolumeRows = computed(() => {
+  const usdtOnly = filterUSDT(filtered.value)
+  return usdtOnly
     .slice()
     .sort((a, b) => b.quoteVol - a.quoteVol)
-    .slice(0, topN),
-)
+    .slice(0, topN)
+})
 </script>

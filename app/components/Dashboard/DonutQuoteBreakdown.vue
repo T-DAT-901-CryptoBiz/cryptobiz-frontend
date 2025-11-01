@@ -1,85 +1,103 @@
 <template>
   <section class="rounded-2xl bg-neutral-900/60 border border-white/5 p-4">
-    <header class="flex items-center justify-between mb-3">
-      <h3 class="font-semibold">Quote Volume (24h)</h3>
-      <NuxtLink to="/markets" class="text-xs text-white/60 hover:text-white/90">Markets</NuxtLink>
+    <header class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-semibold">Quote Volume</h3>
+        <p class="text-xs text-white/60 mt-0.5">24h Breakdown</p>
+      </div>
+      <NuxtLink to="/markets" class="text-xs text-white/60 hover:text-white/90 transition-colors">
+        Markets →
+      </NuxtLink>
     </header>
 
-    <p class="text-xs text-white/60 mb-3">
-      sum quoteVolume —
-      <span v-if="!pending">${{ totalFmt }}</span>
-      <span v-else class="inline-block h-3 w-16 rounded bg-white/10 animate-pulse align-middle" />
-    </p>
-
-    <div v-if="pending" class="space-y-3">
-      <div class="h-2 rounded bg-white/10 animate-pulse"></div>
-      <div v-for="i in 5" :key="i" class="space-y-1.5">
-        <div class="flex items-center justify-between text-sm">
-          <span class="inline-flex items-center gap-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-white/10"></span>
-            <span class="h-4 w-16 rounded bg-white/10 animate-pulse"></span>
-          </span>
-          <span class="h-4 w-24 rounded bg-white/10 animate-pulse"></span>
-        </div>
+    <!-- Total Volume Display -->
+    <div class="mb-4 p-3 rounded-xl bg-white/5 border border-white/10">
+      <div class="text-xs text-white/60 mb-1">Total 24h Volume</div>
+      <div class="text-2xl font-bold tabular-nums">
+        <span v-if="!pending">${{ totalFmt }}</span>
+        <span v-else class="inline-block h-7 w-32 rounded bg-white/10 animate-pulse align-middle" />
       </div>
     </div>
 
-    <div v-else class="space-y-4">
+    <div v-if="pending" class="space-y-3">
+      <div class="h-2 rounded-full bg-white/10 animate-pulse"></div>
+      <div v-for="i in props.top" :key="i" class="space-y-2">
+        <div class="h-12 rounded-lg bg-white/10 animate-pulse"></div>
+      </div>
+    </div>
+
+    <div v-else class="space-y-3">
+      <!-- Segmented Bar -->
       <div
-        class="h-2 w-full overflow-hidden rounded bg-white/10 flex"
+        class="h-3 w-full overflow-hidden rounded-full bg-white/10 flex transition-all duration-700"
         aria-label="Quote distribution"
       >
         <div
           v-for="seg in segments"
           :key="seg.label"
-          class="h-full"
+          class="h-full transition-all duration-700 ease-out"
           :style="{
             width: seg.pct + '%',
             backgroundColor: seg.color,
           }"
-          :title="`${seg.label} • ${seg.pct.toFixed(1)}%`"
+          :title="`${seg.label} • ${seg.pct.toFixed(1)}% • $${seg.valueFmt}`"
         />
       </div>
 
-      <ul class="space-y-3">
-        <li v-for="row in items" :key="row.label" class="space-y-1.5">
-          <div class="flex items-center justify-between text-sm">
-            <span class="inline-flex items-center gap-2 min-w-0">
-              <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: row.color }" />
-              <span class="font-medium truncate">{{ row.label }}</span>
-            </span>
+      <!-- Quote Items -->
+      <div class="space-y-2">
+        <div
+          v-for="row in items"
+          :key="row.label"
+          class="rounded-xl bg-white/5 border border-white/10 p-3 hover:bg-white/10 transition-colors"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-3 min-w-0">
+              <div
+                class="h-3 w-3 rounded-full flex-shrink-0"
+                :style="{ backgroundColor: row.color }"
+              />
+              <div class="min-w-0">
+                <div class="font-semibold text-sm truncate">{{ row.label }}</div>
+                <div class="text-xs text-white/60">{{ row.description }}</div>
+              </div>
+            </div>
 
-            <span class="text-white/70 tabular-nums">
-              ${{ row.valueFmt }}
-              <span class="text-white/50">· {{ row.pct.toFixed(1) }}%</span>
-            </span>
+            <div class="text-right flex-shrink-0 ml-2">
+              <div class="font-semibold tabular-nums text-sm">${{ row.valueFmt }}</div>
+              <div class="text-xs text-white/60">{{ row.pct.toFixed(1) }}%</div>
+            </div>
           </div>
 
-          <div class="h-1.5 rounded bg-white/10 overflow-hidden">
+          <!-- Progress Bar -->
+          <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
             <div
-              class="h-full rounded"
+              class="h-full rounded-full transition-all duration-700 ease-out"
               :style="{ width: row.pct + '%', backgroundColor: row.color }"
-              :aria-label="row.label + ' ' + row.pct.toFixed(1) + '%'"
+              :aria-label="`${row.label} ${row.pct.toFixed(1)}%`"
             />
           </div>
-        </li>
-      </ul>
+        </div>
+      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useAll24h } from '~/composables/useAll24h'
 import { useBinanceMarket } from '~/composables/useBinanceMarket'
 import type { ExchangeInfo } from '~/types/binance'
 
 const props = withDefaults(defineProps<{ top?: number }>(), { top: 5 })
 
-const { rows, pending } = useAll24h()
+const { rows, pending, refresh } = useAll24h()
 const { exchangeInfo } = useBinanceMarket()
 
 const sym2Quote = ref<Record<string, string>>({})
+
+let refreshInterval: ReturnType<typeof setInterval> | null = null
+
 onMounted(async () => {
   const r = await exchangeInfo()
   await r.refresh()
@@ -87,18 +105,41 @@ onMounted(async () => {
   type Sym = ExchangeInfo['symbols'][number]
   r.data.value?.symbols?.forEach((s: Sym) => (map[s.symbol] = s.quoteAsset))
   sym2Quote.value = map
+
+  // Refresh data every 30 seconds
+  if (import.meta.client) {
+    refreshInterval = setInterval(() => {
+      void refresh()
+    }, 30000)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (refreshInterval) clearInterval(refreshInterval)
 })
 
 const colorMap: Record<string, string> = {
   USDT: '#22c55e',
   FDUSD: '#f59e0b',
-  USDC: '#60a5fa',
+  USDC: '#3b82f6',
   BUSD: '#fbbf24',
   TUSD: '#f97316',
   USD: '#86efac',
   BTC: '#a78bfa',
   ETH: '#8b5cf6',
   OTHER: '#64748b',
+}
+
+const descriptionMap: Record<string, string> = {
+  USDT: 'Tether',
+  FDUSD: 'First Digital USD',
+  USDC: 'USD Coin',
+  BUSD: 'Binance USD',
+  TUSD: 'TrueUSD',
+  USD: 'US Dollar',
+  BTC: 'Bitcoin',
+  ETH: 'Ethereum',
+  OTHER: 'Other currencies',
 }
 
 const HIGHLIGHTS = new Set(['USDT', 'FDUSD', 'USDC', 'BUSD', 'TUSD', 'USD', 'BTC', 'ETH'])
@@ -117,14 +158,19 @@ const aggEntries = computed<[string, number][]>(() => {
 })
 
 const total = computed(() => aggEntries.value.reduce((a, [, v]) => a + v, 0))
-const totalFmt = computed(() => Math.round(total.value).toLocaleString())
+const totalFmt = computed(() =>
+  new Intl.NumberFormat(undefined, {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(total.value),
+)
 
 const items = computed(() => {
   const entries = aggEntries.value
   const top = entries.slice(0, props.top)
   const rest = entries.slice(props.top).reduce((a, [, v]) => a + v, 0)
 
-  const merged = [...top]
+  const merged: [string, number][] = [...top]
   const idx = merged.findIndex(([l]) => l === 'OTHER')
   if (rest > 0) {
     if (idx >= 0) merged[idx][1] += rest
@@ -135,8 +181,12 @@ const items = computed(() => {
     const pct = total.value > 0 ? (value / total.value) * 100 : 0
     return {
       label,
+      description: descriptionMap[label] || 'Other',
       value,
-      valueFmt: Math.round(value).toLocaleString(),
+      valueFmt: new Intl.NumberFormat(undefined, {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(value),
       pct,
       color: colorMap[label] || colorMap.OTHER,
     }
@@ -144,6 +194,11 @@ const items = computed(() => {
 })
 
 const segments = computed(() =>
-  items.value.map((d) => ({ label: d.label, pct: d.pct, color: d.color })),
+  items.value.map((d) => ({
+    label: d.label,
+    pct: d.pct,
+    color: d.color,
+    valueFmt: d.valueFmt,
+  })),
 )
 </script>

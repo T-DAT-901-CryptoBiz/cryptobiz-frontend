@@ -191,20 +191,29 @@ watch(
   (data) => {
     if (data && Array.isArray(data)) {
       for (const ticker of data) {
-        if (ticker.symbol && !cache.has(ticker.symbol)) {
-          // Créer une Row partielle avec les données disponibles
-          cache.set(ticker.symbol, {
-            symbol: ticker.symbol,
-            price: Number(ticker.lastPrice ?? 0),
-            ch24: Number(ticker.priceChangePercent ?? 0),
-            vol24: Number(ticker.quoteVolume ?? 0),
-            spark: [], // Sera rempli lors du chargement complet
-          })
+        if (ticker.symbol) {
+          // Toujours mettre à jour les données existantes pour rester synchronisé
+          const existing = cache.get(ticker.symbol)
+          if (existing) {
+            // Mettre à jour les données existantes
+            existing.price = Number(ticker.lastPrice ?? 0)
+            existing.ch24 = Number(ticker.priceChangePercent ?? 0)
+            existing.vol24 = Number(ticker.quoteVolume ?? 0)
+          } else {
+            // Créer une Row partielle avec les données disponibles
+            cache.set(ticker.symbol, {
+              symbol: ticker.symbol,
+              price: Number(ticker.lastPrice ?? 0),
+              ch24: Number(ticker.priceChangePercent ?? 0),
+              vol24: Number(ticker.quoteVolume ?? 0),
+              spark: [], // Sera rempli lors du chargement complet
+            })
+          }
         }
       }
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 )
 
 // Trier le pool complet basé sur les données en cache
@@ -215,14 +224,19 @@ const sortedPool = computed(() => {
     const rowA = cache.get(symA)
     const rowB = cache.get(symB)
 
-    // Si une donnée manque, mettre à la fin
+    // Si les deux ont des données, comparer
+    if (rowA && rowB) {
+      const va = rowA[sortKey.value]
+      const vb = rowB[sortKey.value]
+      return (sortDir.value === 'asc' ? 1 : -1) * (va > vb ? 1 : va < vb ? -1 : 0)
+    }
+
+    // Si une donnée manque, mettre à la fin (mais garder l'ordre relatif)
     if (!rowA && !rowB) return 0
     if (!rowA) return 1
     if (!rowB) return -1
 
-    const va = rowA[sortKey.value]
-    const vb = rowB[sortKey.value]
-    return (sortDir.value === 'asc' ? 1 : -1) * (va > vb ? 1 : va < vb ? -1 : 0)
+    return 0
   })
   return poolSymbols
 })
@@ -237,17 +251,11 @@ const rows = computed(() => {
   for (const sym of viewSymbols.value) {
     const cached = cache.get(sym)
     if (cached) {
-      // Si les sparklines sont vides, charger les données complètes
-      if (!cached.spark || cached.spark.length === 0) {
-        void loadRowData(sym)
-      }
       arr.push(cached)
+    } else {
+      // Créer une row vide temporaire pour éviter les re-renders
+      arr.push({ symbol: sym, price: 0, ch24: 0, vol24: 0, spark: [] })
     }
-  }
-  // Déclencher le chargement des données manquantes
-  const missing = viewSymbols.value.filter((s) => !cache.has(s))
-  if (missing.length) {
-    void loadAllDataForSort()
   }
   return arr
 })
@@ -309,15 +317,18 @@ async function makeRow(sym: string): Promise<Row> {
 
 let liveId: number | null = null
 onMounted(() => {
+  // Charger d'abord la page courante
+  void loadCurrentPageData()
+
   if ((props.autoRefreshMs ?? 0) > 0) {
     liveId = globalThis.setInterval(() => {
-      void loadAllDataForSort()
+      void loadCurrentPageData()
     }, props.autoRefreshMs!)
   }
-  // Charger les sparklines après le montage
+  // Charger les sparklines après un délai pour laisser la page se charger
   setTimeout(() => {
     void loadSparklinesForCurrentPage()
-  }, 200)
+  }, 1000)
 })
 onBeforeUnmount(() => {
   if (liveId !== null) globalThis.clearInterval(liveId)
@@ -329,7 +340,7 @@ watch(
     liveId = null
     if ((ms ?? 0) > 0) {
       liveId = globalThis.setInterval(() => {
-        void loadAllDataForSort()
+        void loadCurrentPageData()
       }, ms!)
     }
   },
@@ -355,53 +366,54 @@ async function loadSparklinesForCurrentPage() {
   })
 
   if (symsToLoad.length > 0) {
-    // Charger par lots pour éviter de surcharger
-    const batchSize = 10
+    // Charger par petits lots avec délai pour ne pas surcharger
+    const batchSize = 5
     for (let i = 0; i < symsToLoad.length; i += batchSize) {
       const batch = symsToLoad.slice(i, i + batchSize)
       await Promise.allSettled(batch.map(loadRowData))
+      // Petit délai entre les lots pour laisser le navigateur respirer
+      if (i + batchSize < symsToLoad.length) {
+        await new Promise((resolve) => setTimeout(resolve, 300))
+      }
     }
   }
 }
 
-// Charger les données nécessaires pour le tri et l'affichage
-async function loadAllDataForSort() {
+// Charger uniquement la page courante initialement
+watch(
+  () => [viewSymbols.value, sortKey.value, sortDir.value],
+  () => {
+    // Charger seulement les données manquantes de la page courante
+    const missing = viewSymbols.value.filter((s) => !cache.has(s))
+    if (missing.length > 0) {
+      void loadCurrentPageData()
+    }
+    // Charger les sparklines après un délai
+    setTimeout(() => {
+      void loadSparklinesForCurrentPage()
+    }, 500)
+  },
+  { immediate: true },
+)
+
+// Charger seulement la page courante (pas tout le preview)
+async function loadCurrentPageData() {
   if (loading.value) return
   loading.value = true
   try {
-    // Priorité 1: Charger les données complètes de la page courante (avec sparklines)
-    // Inclure les symboles qui n'ont pas de données OU qui n'ont pas de sparklines
-    const currentPageSyms = viewSymbols.value.filter((s) => {
-      const cached = cache.get(s)
-      return !cached || !cached.spark || cached.spark.length === 0
-    })
+    const missing = viewSymbols.value.filter((s) => !cache.has(s))
+    if (missing.length === 0) return
 
-    if (currentPageSyms.length > 0) {
-      // Charger d'abord la page courante en priorité
-      const batchSize = 10
-      for (let i = 0; i < currentPageSyms.length; i += batchSize) {
-        const batch = currentPageSyms.slice(i, i + batchSize)
-        const res = await Promise.allSettled(batch.map(makeRow))
-        res.forEach((p, idx) => {
-          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
-        })
-      }
-    }
-
-    // Priorité 2: Pour améliorer le tri, charger aussi les données des premières pages
-    // On prend les premiers 500 symboles du pool (avant tri) pour avoir des données à trier
-    const previewLimit = Math.min(500, pool.value.length)
-    const previewSyms = pool.value.slice(0, previewLimit).filter((s) => !cache.has(s))
-
-    if (previewSyms.length > 0) {
-      // Charger par lots pour éviter de surcharger l'API
-      const batchSize = 50
-      for (let i = 0; i < previewSyms.length; i += batchSize) {
-        const batch = previewSyms.slice(i, i + batchSize)
-        const res = await Promise.allSettled(batch.map(makeRow))
-        res.forEach((p, idx) => {
-          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
-        })
+    const batchSize = 10
+    for (let i = 0; i < missing.length; i += batchSize) {
+      const batch = missing.slice(i, i + batchSize)
+      const res = await Promise.allSettled(batch.map(makeRow))
+      res.forEach((p, idx) => {
+        if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+      })
+      // Délai entre les lots
+      if (i + batchSize < missing.length) {
+        await new Promise((resolve) => setTimeout(resolve, 200))
       }
     }
   } finally {
@@ -409,24 +421,12 @@ async function loadAllDataForSort() {
   }
 }
 
-watch(
-  [pool, perPage, sortKey, sortDir],
-  () => {
-    page.value = 1
-    void loadAllDataForSort()
-    // Charger les sparklines après le chargement initial
-    setTimeout(() => {
-      void loadSparklinesForCurrentPage()
-    }, 100)
-  },
-  { immediate: true },
-)
 watch(page, () => {
-  void loadAllDataForSort()
-  // Charger aussi les sparklines pour la nouvelle page
+  void loadCurrentPageData()
+  // Charger aussi les sparklines pour la nouvelle page après un délai
   setTimeout(() => {
     void loadSparklinesForCurrentPage()
-  }, 100)
+  }, 300)
 })
 
 // Les données sont déjà triées via sortedPool, donc on retourne rows directement
