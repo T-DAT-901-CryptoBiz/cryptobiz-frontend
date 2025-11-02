@@ -1,155 +1,99 @@
 <template>
   <section class="rounded-2xl bg-neutral-900/60 border border-white/5 p-4">
-    <header class="flex items-center justify-between mb-4">
-      <div>
-        <h3 class="font-semibold">BTC Dominance</h3>
-        <p class="text-xs text-white/60 mt-0.5">24h Volume</p>
-      </div>
-      <NuxtLink
-        to="/asset/BTCUSDT"
-        class="text-xs text-white/60 hover:text-white/90 transition-colors"
+    <header class="flex items-center justify-between mb-3">
+      <h3 class="font-semibold">BTC Dominance (24h volume)</h3>
+      <NuxtLink to="/asset/BTCUSDT" class="text-xs text-white/60 hover:text-white/90"
+        >See BTC</NuxtLink
       >
-        See BTC →
-      </NuxtLink>
     </header>
 
-    <div v-if="pending" class="space-y-4">
-      <div class="h-8 w-32 rounded bg-white/10 animate-pulse"></div>
-      <div class="h-32 rounded bg-white/10 animate-pulse"></div>
-      <div class="space-y-2">
-        <div class="h-12 rounded-lg bg-white/10 animate-pulse"></div>
-        <div class="h-12 rounded-lg bg-white/10 animate-pulse"></div>
-      </div>
+    <div v-if="pending" class="space-y-3">
+      <div class="h-7 w-28 rounded bg-white/10 animate-pulse"></div>
+      <div class="h-28 rounded bg-white/10 animate-pulse"></div>
+      <div class="h-4 w-1/2 rounded bg-white/10 animate-pulse"></div>
+      <div class="h-4 w-1/3 rounded bg-white/10 animate-pulse"></div>
     </div>
 
-    <div v-else class="space-y-4">
-      <!-- Main percentage display -->
-      <div class="text-center">
-        <div class="text-4xl font-bold tabular-nums mb-1">
-          <span :style="{ color: colors.btc }">{{ pct.toFixed(1) }}%</span>
+    <div v-else class="space-y-3">
+      <div class="flex items-end justify-between">
+        <div>
+          <div class="text-2xl font-semibold tabular-nums">{{ pct.toFixed(1) }}%</div>
+          <div class="text-xs text-white/60">of stable-quoted volume</div>
         </div>
-        <div class="text-xs text-white/60">of total stable-quoted volume</div>
+        <div class="text-xs text-white/60">Total: ${{ totalStableFmt }}</div>
       </div>
 
-      <!-- SVG Arc Chart -->
-      <div class="relative mx-auto w-full max-w-[360px] py-4">
-        <svg viewBox="0 0 100 60" class="w-full" xmlns="http://www.w3.org/2000/svg">
-          <!-- Background arc -->
+      <div class="relative mx-auto w-full max-w-[420px]">
+        <svg viewBox="0 0 100 60" class="w-full">
           <path
             :d="bgArc"
             fill="none"
-            stroke="rgba(255,255,255,0.08)"
-            stroke-width="6"
+            stroke="rgba(255,255,255,0.12)"
+            stroke-width="8"
             stroke-linecap="round"
           />
 
-          <!-- BTC dominance arc -->
           <path
             :d="bgArc"
             fill="none"
             :stroke="colors.btc"
-            stroke-width="6"
+            stroke-width="8"
             stroke-linecap="round"
             :pathLength="100"
-            :stroke-dasharray="`${pctClamped} ${100 - pctClamped}`"
+            :stroke-dasharray="pctClamped + ' ' + (100 - pctClamped)"
             stroke-dashoffset="0"
-            class="transition-all duration-1000 ease-out"
           />
-
-          <!-- Needle indicator -->
           <circle
-            v-if="pctClamped > 0.5"
+            v-if="pctClamped > 0.2"
             :cx="needle.x"
             :cy="needle.y"
-            r="2"
+            r="1.8"
             :fill="colors.btc"
-            stroke="rgba(255,255,255,0.3)"
-            stroke-width="0.5"
-            class="transition-all duration-1000 ease-out"
+            stroke="rgba(255,255,255,0.2)"
+            stroke-width="0.6"
           />
-
-          <!-- Scale markers -->
-          <text x="5" y="58" font-size="3" fill="rgba(255,255,255,0.5)">0%</text>
-          <text x="47" y="58" font-size="3" fill="rgba(255,255,255,0.5)" text-anchor="middle">
-            50%
-          </text>
-          <text x="95" y="58" font-size="3" fill="rgba(255,255,255,0.5)" text-anchor="end">
+          <text x="5" y="58" font-size="3.2" fill="rgba(255,255,255,0.6)">0%</text>
+          <text x="90" y="58" font-size="3.2" fill="rgba(255,255,255,0.6)" text-anchor="end">
             100%
           </text>
         </svg>
       </div>
 
-      <!-- Volume breakdown -->
-      <div class="space-y-2">
-        <!-- BTC Volume -->
-        <div
-          class="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center justify-between hover:bg-white/10 transition-colors"
+      <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+        <li
+          class="rounded-lg bg-white/5 ring-1 ring-white/10 p-3 flex items-center justify-between"
         >
-          <div class="flex items-center gap-3">
-            <div
-              class="h-3 w-3 rounded-full flex-shrink-0"
-              :style="{ backgroundColor: colors.btc }"
-            />
-            <div>
-              <div class="font-semibold text-sm">BTC</div>
-              <div class="text-xs text-white/60">Bitcoin volume</div>
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="font-semibold tabular-nums">${{ btcVolFmt }}</div>
-            <div class="text-xs text-white/60">
-              {{ ((btcVol / totalStable) * 100 || 0).toFixed(2) }}%
-            </div>
-          </div>
-        </div>
-
-        <!-- Others Volume -->
-        <div
-          class="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center justify-between hover:bg-white/10 transition-colors"
+          <span class="inline-flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: colors.btc }" />
+            <span class="font-medium">BTC</span>
+          </span>
+          <span class="tabular-nums">${{ btcVolFmt }}</span>
+        </li>
+        <li
+          class="rounded-lg bg-white/5 ring-1 ring-white/10 p-3 flex items-center justify-between"
         >
-          <div class="flex items-center gap-3">
-            <div
-              class="h-3 w-3 rounded-full flex-shrink-0"
-              :style="{ backgroundColor: colors.others }"
-            />
-            <div>
-              <div class="font-semibold text-sm">Others</div>
-              <div class="text-xs text-white/60">All other assets</div>
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="font-semibold tabular-nums">${{ othersVolFmt }}</div>
-            <div class="text-xs text-white/60">
-              {{ ((othersVol / totalStable) * 100 || 0).toFixed(2) }}%
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Total volume -->
-      <div class="pt-2 border-t border-white/10">
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-white/60">Total 24h Volume</span>
-          <span class="font-semibold tabular-nums">${{ totalStableFmt }}</span>
-        </div>
-      </div>
+          <span class="inline-flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: colors.others }" />
+            <span class="font-medium">Others</span>
+          </span>
+          <span class="tabular-nums">${{ othersVolFmt }}</span>
+        </li>
+      </ul>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAll24h } from '~/composables/useAll24h'
 import { useBinanceMarket } from '~/composables/useBinanceMarket'
 import type { ExchangeInfo } from '~/types/binance'
 
-const { rows, pending, refresh } = useAll24h()
+const { rows, pending } = useAll24h()
 const { exchangeInfo } = useBinanceMarket()
 
 const sym2Base = ref<Record<string, string>>({})
 const sym2Quote = ref<Record<string, string>>({})
-
-let refreshInterval: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
   const r = await exchangeInfo()
@@ -163,17 +107,6 @@ onMounted(async () => {
   })
   sym2Base.value = b
   sym2Quote.value = q
-
-  // Refresh data every 30 seconds
-  if (import.meta.client) {
-    refreshInterval = setInterval(() => {
-      void refresh()
-    }, 30000)
-  }
-})
-
-onBeforeUnmount(() => {
-  if (refreshInterval) clearInterval(refreshInterval)
 })
 
 const stable = new Set(['USDT', 'FDUSD', 'USDC', 'BUSD', 'TUSD', 'USD'])
@@ -196,34 +129,18 @@ const totalStable = computed(() =>
   }, 0),
 )
 
-const othersVol = computed(() => Math.max(0, totalStable.value - btcVol.value))
-
 const pct = computed(() => {
   const t = totalStable.value || 1
   return (btcVol.value / t) * 100
 })
 
-const totalStableFmt = computed(() =>
-  new Intl.NumberFormat(undefined, {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(totalStable.value),
-)
-const btcVolFmt = computed(() =>
-  new Intl.NumberFormat(undefined, {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(btcVol.value),
-)
+const totalStableFmt = computed(() => Math.round(totalStable.value).toLocaleString())
+const btcVolFmt = computed(() => Math.round(btcVol.value).toLocaleString())
 const othersVolFmt = computed(() =>
-  new Intl.NumberFormat(undefined, {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(othersVol.value),
+  Math.round(Math.max(0, totalStable.value - btcVol.value)).toLocaleString(),
 )
 
-// SVG arc configuration
-const R = 42
+const R = 40
 const CX = 50
 const CY = 50
 
@@ -250,6 +167,6 @@ const needle = computed(() => {
 
 const colors = {
   btc: '#f59e0b',
-  others: '#6b7280',
+  others: '#3b82f6',
 }
 </script>

@@ -1,10 +1,9 @@
-import type { H3Event } from 'h3'
 import { getAuthSession } from '../../utils/session'
 import { getNewsFavorites } from '../../utils/favorites'
 
-export default defineEventHandler(async (event: H3Event) => {
-  const session = getAuthSession(event)
-  if (!session) {
+export default defineEventHandler(async (event) => {
+  const session = await getAuthSession(event)
+  if (!session?.userId) {
     throw createError({
       statusCode: 401,
       message: 'Unauthorized',

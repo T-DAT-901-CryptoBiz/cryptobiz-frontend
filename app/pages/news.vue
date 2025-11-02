@@ -37,7 +37,7 @@
 
           <tbody>
             <tr
-              v-if="pending"
+              v-if="pending || (categoryUI === 'favorites' && favoritesLoading)"
               v-for="i in perPage"
               :key="'sk-' + i"
               class="border-t border-white/5"
@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import {
   useArticlesList,
   useNewsLocalState,
@@ -205,21 +205,150 @@ const listParams = computed<ListQuery>(() => ({
 }))
 
 const { items, total, pending } = useArticlesList(listParams)
-const { isFav, toggleFav, isRead, markRead } = useNewsLocalState()
+const { isFav, toggleFav, isRead, markRead, fav, refreshFavorites } = useNewsLocalState()
+
+// Charger tous les favoris au montage
+onMounted(() => {
+  void refreshFavorites()
+})
+
+// Quand on filtre par favoris, charger tous les articles favoris sans pagination
+const favoriteIds = computed(() => Array.from(fav.value))
+const favoriteItems = ref<Article[]>([])
+const favoritesLoading = ref(false)
+
+// Charger tous les articles favoris quand on active le filtre favoris
+watch(
+  () => [categoryUI.value, favoriteIds.value],
+  async ([cat, ids]) => {
+    if (cat === 'favorites' && ids.length > 0 && !favoritesLoading.value) {
+      favoritesLoading.value = true
+      try {
+        // Charger tous les articles favoris sans pagination
+        const allFavorites: Article[] = []
+
+        // Charger par lots pour éviter de surcharger l'API
+        const batchSize = 20
+        for (let i = 0; i < ids.length; i += batchSize) {
+          const batch = ids.slice(i, i + batchSize)
+          // Charger chaque article individuellement
+          const results = await Promise.allSettled(
+            batch.map((id) =>
+              $fetch<Article>(`http://127.0.0.1:8004/api/v1/articles/${id}`).catch(() => null),
+            ),
+          )
+          results.forEach((result) => {
+            if (result.status === 'fulfilled' && result.value) {
+              allFavorites.push(result.value)
+            }
+          })
+
+          // Petit délai entre les lots pour ne pas surcharger
+          if (i + batchSize < ids.length) {
+            await new Promise((resolve) => setTimeout(resolve, 100))
+          }
+        }
+
+        // Trier par date de publication (plus récent en premier)
+        allFavorites.sort((a, b) => {
+          const dateA = new Date(a.publish_date).getTime()
+          const dateB = new Date(b.publish_date).getTime()
+          return dateB - dateA
+        })
+
+        favoriteItems.value = allFavorites
+      } catch (error) {
+        console.error('Failed to load favorite articles:', error)
+        favoriteItems.value = []
+      } finally {
+        favoritesLoading.value = false
+      }
+    } else if (cat !== 'favorites') {
+      favoriteItems.value = []
+    }
+  },
+  { immediate: true },
+)
+
+// Rafraîchir la liste des favoris quand on en ajoute/supprime
+watch(favoriteIds, async (newIds, oldIds) => {
+  if (categoryUI.value === 'favorites') {
+    if (newIds.length === 0) {
+      favoriteItems.value = []
+      return
+    }
+
+    // Si on ajoute un favori, ajouter l'article à la liste
+    if (oldIds && newIds.length > oldIds.length) {
+      const addedId = newIds.find((id) => !oldIds.includes(id))
+      if (addedId && !favoriteItems.value.find((a) => a.id === addedId)) {
+        try {
+          const article = await $fetch<Article>(`http://127.0.0.1:8004/api/v1/articles/${addedId}`)
+          if (article) {
+            favoriteItems.value.push(article)
+            // Re-trier
+            favoriteItems.value.sort((a, b) => {
+              const dateA = new Date(a.publish_date).getTime()
+              const dateB = new Date(b.publish_date).getTime()
+              return dateB - dateA
+            })
+          }
+        } catch {
+          // Ignore errors, on rechargera tout
+        }
+      }
+    } else if (oldIds && newIds.length < oldIds.length) {
+      // Si on supprime un favori, le retirer de la liste
+      const removedId = oldIds.find((id) => !newIds.includes(id))
+      if (removedId) {
+        favoriteItems.value = favoriteItems.value.filter((a) => a.id !== removedId)
+      }
+    }
+  }
+})
 
 const filteredClient = computed<Article[]>(() => {
-  let out = items.value
-  if (categoryUI.value === 'favorites') out = out.filter((a) => isFav(a.id))
-  if (tagUI.value === 'unread') out = out.filter((a) => !isRead(a.id))
+  let out: Article[]
+
+  if (categoryUI.value === 'favorites') {
+    // Utiliser la liste complète des favoris chargée
+    out = favoriteItems.value
+  } else {
+    // Utiliser les items de la liste paginée normale
+    out = items.value
+  }
+
+  // Appliquer le filtre "unread" si nécessaire
+  if (tagUI.value === 'unread') {
+    out = out.filter((a) => !isRead(a.id))
+  }
+
   return out
 })
 
-const start = computed(() => (page.value - 1) * perPage.value)
-const pageItems = computed(() => filteredClient.value)
+// Pour les favoris, on pagine côté client
+const start = computed(() => {
+  if (categoryUI.value === 'favorites') {
+    return (page.value - 1) * perPage.value
+  }
+  return (page.value - 1) * perPage.value
+})
+
+const pageItems = computed(() => {
+  if (categoryUI.value === 'favorites') {
+    // Pagination côté client pour les favoris
+    return filteredClient.value.slice(start.value, start.value + perPage.value)
+  }
+  return filteredClient.value
+})
 
 const shownTotal = computed(() => {
-  if (categoryUI.value === 'favorites' || tagUI.value === 'unread')
+  if (categoryUI.value === 'favorites') {
     return filteredClient.value.length
+  }
+  if (tagUI.value === 'unread') {
+    return filteredClient.value.length
+  }
   return total.value
 })
 

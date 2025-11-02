@@ -260,11 +260,15 @@ export function useArticleStats() {
 const READ_KEY = 'news:read:v1'
 
 export function useNewsLocalState() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+
+  // Utiliser une clé unique par utilisateur pour isoler les favoris
+  // Note: useState ne peut pas utiliser une clé computed directement,
+  // donc on utilise une clé fixe et on gère l'isolation via refreshFavorites
   const fav = useState<Set<number>>('news:fav', () => new Set<number>())
   const read = useState<Set<number>>('news:read', () => new Set<number>())
 
-  // Charger les favoris depuis l'API
+  // Charger les favoris depuis l'API (spécifique à l'utilisateur connecté)
   const refreshFavorites = async () => {
     if (!import.meta.client || !isAuthenticated.value) {
       fav.value = new Set<number>()
@@ -272,6 +276,7 @@ export function useNewsLocalState() {
     }
 
     try {
+      // L'API retourne uniquement les favoris de l'utilisateur connecté
       const { favorites } = await $fetch<{ favorites: number[] }>('/api/favorites/news')
       fav.value = new Set<number>(favorites || [])
     } catch {
@@ -284,15 +289,21 @@ export function useNewsLocalState() {
     void refreshFavorites()
   }
 
-  // Recharger les favoris quand l'authentification change
+  // Recharger les favoris quand l'authentification change (connexion/déconnexion ou changement d'utilisateur)
   if (import.meta.client) {
-    watch(isAuthenticated, (auth) => {
-      if (auth) {
-        void refreshFavorites()
-      } else {
-        fav.value = new Set<number>()
-      }
-    })
+    watch(
+      [isAuthenticated, () => user.value?.id],
+      ([auth, userId]) => {
+        if (auth && userId) {
+          // Vider les favoris avant de charger ceux du nouvel utilisateur
+          fav.value = new Set<number>()
+          void refreshFavorites()
+        } else {
+          fav.value = new Set<number>()
+        }
+      },
+      { immediate: false },
+    )
   }
 
   // Charger les articles lus depuis localStorage (état local)

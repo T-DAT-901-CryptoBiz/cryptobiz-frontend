@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
 import { useFuturesUniverse } from '~/composables/useFuturesUniverse'
 import { useAll24h } from '~/composables/useAll24h'
@@ -42,22 +42,7 @@ const { universe: spotUni } = useSymbolsUniverse() // Ex: ['BTCUSDT', ...]
 const { symbols: futUni } = useFuturesUniverse() // Ex: ['BTCUSDT', ...] (USDT-M futures)
 
 const { rows, refresh } = useAll24h() // rows: Ticker24h[]
-
-let refreshInterval: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-  void refresh()
-  // Rafraîchir toutes les 30 secondes pour rester synchronisé avec MarketHighlights
-  if (import.meta.client) {
-    refreshInterval = setInterval(() => {
-      void refresh()
-    }, 30000)
-  }
-})
-
-onBeforeUnmount(() => {
-  if (refreshInterval) clearInterval(refreshInterval)
-})
+onMounted(() => refresh())
 
 /* ---------- utils ---------- */
 const STABLES = ['USDT', 'FDUSD', 'USDC', 'BUSD', 'TUSD', 'USD']
