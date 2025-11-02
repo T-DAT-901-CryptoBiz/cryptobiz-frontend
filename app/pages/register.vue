@@ -11,16 +11,16 @@
               </div>
               <span class="text-2xl font-bold text-white">CRYPTOBIZ</span>
             </div>
-            <h1 class="text-3xl font-bold text-white">Inscription</h1>
+            <h1 class="text-3xl font-bold text-white">Register</h1>
           </div>
 
           <form @submit.prevent="handleRegister" class="space-y-5">
             <div>
-              <label class="block text-sm font-medium text-white mb-2">Nom</label>
+              <label class="block text-sm font-medium text-white mb-2">Name</label>
               <input
                 v-model="form.name"
                 type="text"
-                placeholder="Votre nom complet"
+                placeholder="Your full name"
                 required
                 :disabled="loading"
                 class="w-full px-4 py-3 rounded-lg bg-[#33363A] border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-white/50 transition-colors disabled:opacity-50"
@@ -28,13 +28,11 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-white mb-2"
-                >E-mail/N° de téléphone</label
-              >
+              <label class="block text-sm font-medium text-white mb-2">Email/Phone number</label>
               <input
                 v-model="form.email"
                 type="email"
-                placeholder="E-mail/N° de téléphone (sans indicatif)"
+                placeholder="Email/Phone number (without country code)"
                 required
                 :disabled="loading"
                 class="w-full px-4 py-3 rounded-lg bg-[#33363A] border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-white/50 transition-colors disabled:opacity-50"
@@ -42,17 +40,17 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-white mb-2">Mot de passe</label>
+              <label class="block text-sm font-medium text-white mb-2">Password</label>
               <input
                 v-model="form.password"
                 type="password"
-                placeholder="Minimum 6 caractères"
+                placeholder="Minimum 6 characters"
                 required
                 :disabled="loading"
                 class="w-full px-4 py-3 rounded-lg bg-[#33363A] border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-white/50 transition-colors disabled:opacity-50"
               />
               <p class="mt-1.5 text-xs text-white/70">
-                Le mot de passe doit contenir au moins 6 caractères
+                Password must contain at least 6 characters
               </p>
             </div>
 
@@ -68,10 +66,10 @@
               :disabled="loading"
               class="w-full py-3 rounded-lg bg-white text-black font-semibold hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              <span v-if="!loading">Créer mon compte</span>
+              <span v-if="!loading">Create my account</span>
               <span v-else class="flex items-center gap-2">
                 <Icon name="lucide:loader-2" class="w-4 h-4 animate-spin" />
-                Chargement...
+                Loading...
               </span>
             </button>
           </form>
@@ -82,7 +80,7 @@
               <div class="w-full border-t border-white/10"></div>
             </div>
             <div class="relative flex justify-center">
-              <span class="px-3 bg-[#26292E] text-white text-sm">ou</span>
+              <span class="px-3 bg-[#26292E] text-white text-sm">or</span>
             </div>
           </div>
 
@@ -112,7 +110,7 @@
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              <span>Continuer avec Google</span>
+              <span>Continue with Google</span>
             </button>
           </div>
 
@@ -122,7 +120,7 @@
               to="/login"
               class="text-white hover:text-white/80 font-medium transition-colors text-sm"
             >
-              Déjà un compte ? Se connecter
+              Already have an account? Log in
             </NuxtLink>
           </div>
         </div>
@@ -150,12 +148,12 @@ const error = ref<string | null>(null)
 
 async function handleRegister() {
   if (!form.value.name || !form.value.email || !form.value.password) {
-    error.value = 'Veuillez remplir tous les champs'
+    error.value = 'Please fill in all fields'
     return
   }
 
   if (form.value.password.length < 6) {
-    error.value = 'Le mot de passe doit contenir au moins 6 caractères'
+    error.value = 'Password must contain at least 6 characters'
     return
   }
 
@@ -168,8 +166,8 @@ async function handleRegister() {
   } catch (err: unknown) {
     error.value =
       err && typeof err === 'object' && 'data' in err
-        ? String((err.data as { message?: string }).message || "Erreur lors de l'inscription")
-        : "Erreur lors de l'inscription"
+        ? String((err.data as { message?: string }).message || 'Registration error')
+        : 'Registration error'
   } finally {
     loading.value = false
   }
