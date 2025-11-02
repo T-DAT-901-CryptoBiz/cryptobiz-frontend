@@ -90,63 +90,126 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="rounded-2xl bg-white/5 border border-white/10 p-4">
-        <div class="flex items-center justify-between mb-2">
+      <!-- Top Categories -->
+      <div class="rounded-2xl bg-neutral-900/60 border border-white/5 p-4">
+        <header class="flex items-center justify-between mb-4">
           <h3 class="font-semibold">Top Categories</h3>
           <span class="text-xs text-white/60">by count</span>
+        </header>
+
+        <div v-if="pending" class="space-y-3">
+          <div v-for="i in 5" :key="i" class="space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="h-4 w-4 rounded-full bg-white/10 animate-pulse" />
+                <div class="h-4 w-24 rounded bg-white/10 animate-pulse" />
+              </div>
+              <div class="h-4 w-12 rounded bg-white/10 animate-pulse" />
+            </div>
+            <div class="h-1.5 w-full rounded-full bg-white/10 animate-pulse" />
+          </div>
         </div>
-        <ul v-if="!pending" class="space-y-1.5">
-          <li
+
+        <div v-else class="space-y-3">
+          <div
             v-for="([sym, n], i) in topCategories"
             :key="sym"
-            class="flex items-center justify-between"
+            class="rounded-lg bg-white/5 ring-1 ring-white/10 p-3 hover:bg-white/10 transition-colors"
           >
-            <div class="flex items-center gap-2 min-w-0">
-              <ui-coin-logo :asset="sym" :size="16" />
-              <span class="font-medium">{{ i + 1 }}. {{ sym }}</span>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <div class="flex-shrink-0">
+                  <ui-coin-logo :asset="sym" :size="20" />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-white/50 tabular-nums">#{{ i + 1 }}</span>
+                    <span class="font-medium text-sm truncate">{{ sym }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ml-3 text-right flex-shrink-0">
+                <div class="text-sm font-semibold tabular-nums text-white/90">
+                  {{ n.toLocaleString() }}
+                </div>
+                <div class="text-[10px] text-white/50">articles</div>
+              </div>
             </div>
-            <span class="tabular-nums text-sm text-white/80">{{ n.toLocaleString() }}</span>
-          </li>
-        </ul>
-        <div v-else class="space-y-2">
-          <div v-for="i in 6" :key="i" class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="h-4 w-4 rounded-full bg-white/10 animate-pulse" />
-              <div class="h-4 w-24 rounded bg-white/10 animate-pulse" />
+            <div class="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all duration-500"
+                :style="{
+                  width:
+                    topCategories.length > 0 && topCategories[0]
+                      ? (n / topCategories[0][1]) * 100 + '%'
+                      : 0,
+                  backgroundColor: '#3b82f6',
+                }"
+              />
             </div>
-            <div class="h-4 w-12 rounded bg-white/10 animate-pulse" />
           </div>
         </div>
       </div>
 
-      <div class="rounded-2xl bg-white/5 border border-white/10 p-4">
-        <div class="flex items-center justify-between mb-2">
+      <!-- Top Sources -->
+      <div class="rounded-2xl bg-neutral-900/60 border border-white/5 p-4">
+        <header class="flex items-center justify-between mb-4">
           <h3 class="font-semibold">Top Sources</h3>
           <span class="text-xs text-white/60">by count</span>
+        </header>
+
+        <div v-if="pending" class="space-y-3">
+          <div v-for="i in 5" :key="i" class="space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="h-4 w-4 rounded bg-white/10 animate-pulse" />
+                <div class="h-4 w-28 rounded bg-white/10 animate-pulse" />
+              </div>
+              <div class="h-4 w-12 rounded bg-white/10 animate-pulse" />
+            </div>
+            <div class="h-1.5 w-full rounded-full bg-white/10 animate-pulse" />
+          </div>
         </div>
-        <ul v-if="!pending" class="space-y-1.5">
-          <li
-            v-for="([hostName, n], i) in sourcesAgg"
+
+        <div v-else class="space-y-3">
+          <div
+            v-for="([hostName, n], i) in topSources"
             :key="hostName"
-            class="flex items-center justify-between"
+            class="rounded-lg bg-white/5 ring-1 ring-white/10 p-3 hover:bg-white/10 transition-colors"
           >
-            <div class="flex items-center gap-2 min-w-0">
-              <img
-                :src="favicon('https://' + hostName)"
-                class="h-4 w-4 rounded-sm ring-1 ring-white/10 object-cover"
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <div class="flex-shrink-0">
+                  <img
+                    :src="favicon('https://' + hostName)"
+                    class="h-5 w-5 rounded-sm ring-1 ring-white/10 object-cover"
+                    :alt="hostName"
+                  />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-white/50 tabular-nums">#{{ i + 1 }}</span>
+                    <span class="font-medium text-sm truncate">{{ hostName }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ml-3 text-right flex-shrink-0">
+                <div class="text-sm font-semibold tabular-nums text-white/90">
+                  {{ n.toLocaleString() }}
+                </div>
+                <div class="text-[10px] text-white/50">articles</div>
+              </div>
+            </div>
+            <div class="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all duration-500"
+                :style="{
+                  width:
+                    topSources.length > 0 && topSources[0] ? (n / topSources[0][1]) * 100 + '%' : 0,
+                  backgroundColor: '#22c55e',
+                }"
               />
-              <span class="font-medium truncate">{{ i + 1 }}. {{ hostName }}</span>
             </div>
-            <span class="tabular-nums text-sm text-white/80">{{ n.toLocaleString() }}</span>
-          </li>
-        </ul>
-        <div v-else class="space-y-2">
-          <div v-for="i in 5" :key="i" class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <div class="h-4 w-4 rounded bg-white/10 animate-pulse" />
-              <div class="h-4 w-28 rounded bg-white/10 animate-pulse" />
-            </div>
-            <div class="h-4 w-12 rounded bg-white/10 animate-pulse" />
           </div>
         </div>
       </div>
@@ -159,6 +222,8 @@ import { computed } from 'vue'
 import { useArticleStats } from '~/composables/useArticles'
 const { pending, total, last14, last24hCount, topCategories, sourcesAgg, latest } =
   useArticleStats()
+
+const topSources = computed(() => sourcesAgg.value.slice(0, 5))
 
 const maxVal = computed(() => Math.max(1, ...last14.value.map((d) => d.count)))
 const scale = (n: number) => Math.round((n / maxVal.value) * 100)

@@ -13,13 +13,6 @@
           {{ filteredSymbols.length }} assets
         </span>
         <button
-          type="button"
-          class="px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80"
-          @click="refresh()"
-        >
-          Refresh
-        </button>
-        <button
           v-if="symbols.length"
           type="button"
           class="px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-rose-300/90"

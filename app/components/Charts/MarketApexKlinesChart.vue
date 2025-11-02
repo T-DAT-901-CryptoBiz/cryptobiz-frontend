@@ -71,13 +71,6 @@
         >
           <Icon name="lucide:wifi-off" class="h-4 w-4" /> Offline
         </span>
-
-        <button
-          class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-white/5 hover:bg-white/10"
-          @click="fetchData"
-        >
-          <Icon name="lucide:refresh-ccw" class="h-4 w-4" /> Refresh
-        </button>
       </div>
     </div>
     <ClientOnly>

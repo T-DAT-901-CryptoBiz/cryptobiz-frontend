@@ -1,69 +1,52 @@
 <template>
   <section class="rounded-2xl bg-neutral-900/60 border border-white/5 p-4">
-    <header class="flex items-center justify-between mb-3">
+    <header class="flex items-center justify-between mb-4">
       <h3 class="font-semibold">Quote Volume (24h)</h3>
       <NuxtLink to="/markets" class="text-xs text-white/60 hover:text-white/90">Markets</NuxtLink>
     </header>
 
-    <p class="text-xs text-white/60 mb-3">
-      sum quoteVolume —
-      <span v-if="!pending">${{ totalFmt }}</span>
-      <span v-else class="inline-block h-3 w-16 rounded bg-white/10 animate-pulse align-middle" />
-    </p>
-
     <div v-if="pending" class="space-y-3">
-      <div class="h-2 rounded bg-white/10 animate-pulse"></div>
-      <div v-for="i in 5" :key="i" class="space-y-1.5">
-        <div class="flex items-center justify-between text-sm">
-          <span class="inline-flex items-center gap-2">
-            <span class="h-2.5 w-2.5 rounded-full bg-white/10"></span>
-            <span class="h-4 w-16 rounded bg-white/10 animate-pulse"></span>
-          </span>
-          <span class="h-4 w-24 rounded bg-white/10 animate-pulse"></span>
-        </div>
+      <div class="h-7 w-28 rounded bg-white/10 animate-pulse"></div>
+      <div v-for="i in 6" :key="i" class="space-y-2">
+        <div class="h-4 w-full rounded bg-white/10 animate-pulse"></div>
       </div>
     </div>
 
     <div v-else class="space-y-4">
-      <div
-        class="h-2 w-full overflow-hidden rounded bg-white/10 flex"
-        aria-label="Quote distribution"
-      >
-        <div
-          v-for="seg in segments"
-          :key="seg.label"
-          class="h-full"
-          :style="{
-            width: seg.pct + '%',
-            backgroundColor: seg.color,
-          }"
-          :title="`${seg.label} • ${seg.pct.toFixed(1)}%`"
-        />
+      <div class="flex items-end justify-between">
+        <div>
+          <div class="text-2xl font-semibold tabular-nums">${{ totalFmt }}</div>
+          <div class="text-xs text-white/60">Total quote volume (24h)</div>
+        </div>
       </div>
 
-      <ul class="space-y-3">
-        <li v-for="row in items" :key="row.label" class="space-y-1.5">
+      <div class="space-y-3">
+        <div v-for="item in displayItems" :key="item.label" class="space-y-2">
           <div class="flex items-center justify-between text-sm">
-            <span class="inline-flex items-center gap-2 min-w-0">
-              <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: row.color }" />
-              <span class="font-medium truncate">{{ row.label }}</span>
+            <span class="inline-flex items-center gap-2 min-w-0 flex-1">
+              <span
+                class="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                :style="{ backgroundColor: item.color }"
+              />
+              <span class="font-medium truncate">{{ item.label }}</span>
             </span>
-
-            <span class="text-white/70 tabular-nums">
-              ${{ row.valueFmt }}
-              <span class="text-white/50">· {{ row.pct.toFixed(1) }}%</span>
+            <span class="tabular-nums text-white/70 ml-2">
+              ${{ item.valueFmt }}
+              <span class="text-white/50 text-xs ml-1">({{ item.pct.toFixed(1) }}%)</span>
             </span>
           </div>
 
-          <div class="h-1.5 rounded bg-white/10 overflow-hidden">
+          <div class="relative h-3 w-full rounded-full bg-white/10 overflow-hidden">
             <div
-              class="h-full rounded"
-              :style="{ width: row.pct + '%', backgroundColor: row.color }"
-              :aria-label="row.label + ' ' + row.pct.toFixed(1) + '%'"
+              class="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
+              :style="{
+                width: item.pct + '%',
+                backgroundColor: item.color,
+              }"
             />
           </div>
-        </li>
-      </ul>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -74,7 +57,7 @@ import { useAll24h } from '~/composables/useAll24h'
 import { useBinanceMarket } from '~/composables/useBinanceMarket'
 import type { ExchangeInfo } from '~/types/binance'
 
-const props = withDefaults(defineProps<{ top?: number }>(), { top: 5 })
+const props = withDefaults(defineProps<{ top?: number }>(), { top: 6 })
 
 const { rows, pending } = useAll24h()
 const { exchangeInfo } = useBinanceMarket()
@@ -117,9 +100,15 @@ const aggEntries = computed<[string, number][]>(() => {
 })
 
 const total = computed(() => aggEntries.value.reduce((a, [, v]) => a + v, 0))
-const totalFmt = computed(() => Math.round(total.value).toLocaleString())
+const totalFmt = computed(() => {
+  const t = total.value
+  if (t >= 1e12) return (t / 1e12).toFixed(2) + 'T'
+  if (t >= 1e9) return (t / 1e9).toFixed(2) + 'B'
+  if (t >= 1e6) return (t / 1e6).toFixed(2) + 'M'
+  return Math.round(t).toLocaleString()
+})
 
-const items = computed(() => {
+const displayItems = computed(() => {
   const entries = aggEntries.value
   const top = entries.slice(0, props.top)
   const rest = entries.slice(props.top).reduce((a, [, v]) => a + v, 0)
@@ -136,14 +125,16 @@ const items = computed(() => {
     return {
       label,
       value,
-      valueFmt: Math.round(value).toLocaleString(),
+      valueFmt: (() => {
+        const v = value
+        if (v >= 1e12) return (v / 1e12).toFixed(2) + 'T'
+        if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B'
+        if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M'
+        return Math.round(v).toLocaleString()
+      })(),
       pct,
       color: colorMap[label] || colorMap.OTHER,
     }
   })
 })
-
-const segments = computed(() =>
-  items.value.map((d) => ({ label: d.label, pct: d.pct, color: d.color })),
-)
 </script>
