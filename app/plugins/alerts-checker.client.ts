@@ -158,8 +158,7 @@ export default defineNuxtPlugin({
         checkInterval = setInterval(checkAlerts, 30000)
       }
 
-      // Stocker la fonction globalement
-      globalCheckAlerts = checkAlerts
+      // Exposer la fonction globalement pour pouvoir l'appeler manuellement
       if (import.meta.client) {
         ;(window as { __checkAlerts?: () => Promise<void> }).__checkAlerts = checkAlerts
       }
