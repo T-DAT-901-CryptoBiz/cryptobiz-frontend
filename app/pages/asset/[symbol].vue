@@ -54,19 +54,67 @@
     <div class="grid grid-cols-1 lg:grid-cols-1 gap-6">
       <div class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
         <ClientOnly>
-          <ChartsTvAdvancedChart
-            :symbol="tvSymbol"
-            :interval="interval === '1h' ? '60' : interval.replace('m', '')"
-            theme="dark"
-          />
+          <div class="rounded-xl p-3">
+            <div
+              class="relative inline-grid grid-cols-2 rounded-lg border border-white/10 p-1 text-sm"
+              role="tablist"
+              aria-label="Chart view"
+            >
+              <div
+                class="absolute inset-y-1 w-1/2 rounded-md bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,.05)] transition-transform duration-300"
+                :class="showTv ? 'translate-x-0' : 'translate-x-full'"
+                aria-hidden="true"
+              />
+
+              <button
+                role="tab"
+                :aria-selected="showTv ? 'true' : 'false'"
+                class="relative z-10 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md transition-colors"
+                :class="showTv ? 'text-white' : 'text-white/60 hover:text-white/90'"
+                @click="showTv = true"
+              >
+                <Icon name="lucide:line-chart" class="h-4 w-4" />
+                <span class="hidden sm:inline">TradingView</span>
+                <span class="sm:hidden">TV</span>
+              </button>
+
+              <button
+                role="tab"
+                :aria-selected="!showTv ? 'true' : 'false'"
+                class="relative z-10 flex items-center justify-center gap-2 px-3 py-1.5 rounded-md transition-colors"
+                :class="!showTv ? 'text-white' : 'text-white/60 hover:text-white/90'"
+                @click="showTv = false"
+              >
+                <Icon name="lucide:candlestick-chart" class="h-4 w-4" />
+                <span class="hidden sm:inline">Our View</span>
+                <span class="sm:hidden">OV</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
+            <ChartsTvAdvancedChart
+              v-if="showTv"
+              :symbol="tvSymbol"
+              :interval="interval === '1h' ? '60' : interval.replace('m', '')"
+              theme="dark"
+            />
+            <MarketApexKlinesChart
+              v-else
+              :symbol="symbol"
+              :interval="interval"
+              @switch-chart="showTv = $event === 'tv'"
+            />
+          </div>
+
           <template #fallback>
-            <div class="h-[420px] grid place-items-center">Chargement du chart…</div>
+            <div class="h-[420px] grid place-items-center">Load chart…</div>
           </template>
         </ClientOnly>
       </div>
 
       <div class="space-y-6">
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-2 lg:grid-col-2 gap-6">
           <MarketAssetOverview :symbol="symbol" />
           <ClientOnly>
             <MarketCommunity :symbol="symbol" />
@@ -101,11 +149,13 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTicker } from '~/composables/useTicker'
 import { useBinanceWS } from '~/composables/useBinanceWS'
+import MarketApexKlinesChart from '~/components/Charts/MarketApexKlinesChart.vue'
 
 const route = useRoute()
 const symbol = computed(() => String(route.params.symbol || 'BTCUSDT'))
 const tvSymbol = computed(() => `BINANCE:${symbol.value}`)
 const interval = ref<Interval>('1h')
+const showTv = ref(true)
 
 const { data: t, pending } = useTicker(symbol.value)
 

@@ -36,10 +36,12 @@ export function useKlines(symbol: string, interval: Interval = '1h', limit = 500
     }
   }
 
-  const refreshMs = ref(15_000)
+  const refreshMs = ref(60_000) // Réduit de 15s à 60s pour moins d'appels
 
   onMounted(async () => {
     await load()
+    // Intervalle augmenté à 60s pour réduire les appels API
+    // Note: Pour un vrai temps réel, envisager d'utiliser WebSocket kline stream
     const id = setInterval(load, refreshMs.value)
     onBeforeUnmount(() => clearInterval(id))
   })

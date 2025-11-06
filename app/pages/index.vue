@@ -20,6 +20,7 @@
     </section>
 
     <DashboardLiquidity />
+    <NewsStats />
   </div>
 </template>
 

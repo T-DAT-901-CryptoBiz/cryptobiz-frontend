@@ -16,15 +16,17 @@ export function useTicker(symbol: string) {
 
   onMounted(async () => {
     await load()
+    // Utiliser uniquement WebSocket pour les mises à jour en temps réel
+    // Le polling REST toutes les 30s est redondant avec miniTicker
     const stop = miniTicker(symbol, (mt) => {
       if (!data.value) return
       data.value.lastPrice = mt.c
       data.value.priceChangePercent = mt.P
     })
-    const id = setInterval(load, 30_000)
+    // Supprimé: polling REST redondant toutes les 30s
+    // Les données 24h sont mises à jour via WebSocket en temps réel
     onBeforeUnmount(() => {
       stop()
-      clearInterval(id)
     })
   })
 

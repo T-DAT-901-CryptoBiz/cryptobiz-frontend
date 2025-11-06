@@ -1,0 +1,142 @@
+[
+  {
+    "id": "n1",
+    "title": "Bitcoin jumps above $70k as markets rally",
+    "url": "https://example.com/bitcoin-rally",
+    "source": "CoinDesk",
+    "published_at": "2025-09-10T13:15:00Z",
+    "summary": "BTC breaks key resistance amid broader risk-on sentiment.",
+    "tickers": ["BTC", "ETH"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n2",
+    "title": "Solana ecosystem sees fresh inflows",
+    "url": "https://example.com/solana-inflows",
+    "source": "The Block",
+    "published_at": "2025-09-10T09:32:00Z",
+    "summary": "New capital rotates into SOL DeFi protocols.",
+    "tickers": ["SOL"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n3",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n4",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n5",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n6",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n7",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n8",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n9",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n10",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n11",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n12",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n13",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  },
+  {
+    "id": "n14",
+    "title": "ETH gas fees cool as L2 adoption grows",
+    "url": "https://example.com/eth-gas-fees",
+    "source": "CryptoBriefing",
+    "published_at": "2025-09-09T19:05:00Z",
+    "summary": "Layer-2 throughput eases mainnet congestion.",
+    "tickers": ["ETH", "ARB", "OP"],
+    "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.m.wikipedia.org%2Fwiki%2FFichier%3ABitcoin.svg&psig=AOvVaw02H93fLFgqlUW_CMC_NRrf&ust=1757676522682000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCODlzbfN0I8DFQAAAAAdAAAAABAE"
+  }
+]

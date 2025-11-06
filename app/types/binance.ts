@@ -28,6 +28,7 @@ export interface Ticker24h {
   quoteVolume: string
   highPrice: string
   lowPrice: string
+  count: number
 }
 export type KlineTuple = [
   number,

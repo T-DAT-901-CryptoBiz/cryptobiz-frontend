@@ -4,23 +4,28 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
-    "dev": "nuxt dev",
+    "dev": "CHOKIDAR_USEPOLLING=true CHOKIDAR_INTERVAL=1000 nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "prepare": "husky",
-    "lint": "eslint . --ext .ts,.js,.vue",
-    "lint:fix": "eslint . --ext .ts,.js,.vue --fix",
+    "lint": "eslint app server --ext .ts,.js,.vue",
+    "lint:fix": "eslint app server --ext .ts,.js,.vue --fix",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@nuxt/eslint": "^1.9.0",
     "@nuxt/image": "^1.11.0",
     "@nuxt/ui": "^3.3.2",
+    "@types/bcryptjs": "^2.4.6",
+    "axios": "^1.11.0",
+    "bcryptjs": "^3.0.2",
     "globals": "^16.3.0",
+    "google-auth-library": "^10.5.0",
     "nuxt": "^4.0.3",
     "vue": "^3.5.19",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "vue3-apexcharts": "^1.8.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

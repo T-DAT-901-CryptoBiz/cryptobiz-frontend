@@ -205,7 +205,7 @@ const topPairs = computed(() => {
     .slice(0, 5)
 })
 
-const money = (n: number) => (n ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0')
+const money = (n: number) => (n ? n.toLocaleString(undefined, { maximumFractionDigits: 10 }) : '0')
 const compactFmt = new Intl.NumberFormat(undefined, {
   notation: 'compact',
   maximumFractionDigits: 2,
