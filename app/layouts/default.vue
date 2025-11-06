@@ -166,6 +166,7 @@ const nav: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: 'lucide:layout-dashboard' },
   { to: '/markets', label: 'Markets', icon: 'lucide:line-chart' },
   { to: '/compare', label: 'Compare', icon: 'lucide:git-compare' },
+  { to: '/portfolio', label: 'Portfolio', icon: 'lucide:wallet' },
   { to: '/watchlist', label: 'Watchlist', icon: 'lucide:star' },
   { to: '/news', label: 'News', icon: 'lucide:newspaper' },
 ]
@@ -176,6 +177,7 @@ const titles: Record<string, string> = {
   '/': 'Dashboard',
   '/markets': 'Markets',
   '/compare': 'Compare',
+  '/portfolio': 'Portfolio',
   '/watchlist': 'Watchlist',
   '/news': 'News',
 }
