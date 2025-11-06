@@ -165,6 +165,7 @@ type NavItem = { to: string; label: string; icon: string }
 const nav: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: 'lucide:layout-dashboard' },
   { to: '/markets', label: 'Markets', icon: 'lucide:line-chart' },
+  { to: '/compare', label: 'Compare', icon: 'lucide:git-compare' },
   { to: '/watchlist', label: 'Watchlist', icon: 'lucide:star' },
   { to: '/news', label: 'News', icon: 'lucide:newspaper' },
 ]
@@ -174,6 +175,7 @@ const isActive = (to: string) => route.path === to || route.path.startsWith(to +
 const titles: Record<string, string> = {
   '/': 'Dashboard',
   '/markets': 'Markets',
+  '/compare': 'Compare',
   '/watchlist': 'Watchlist',
   '/news': 'News',
 }
