@@ -166,7 +166,7 @@ onMounted(async () => {
   sym2Quote.value = mapQ
 })
 
-const ALLOWED_QUOTES = new Set(['USDT', 'USDC', 'FDUSD', 'TUSD', 'USD', 'BUSD'])
+const ALLOWED_QUOTES = new Set(['USDC']) // Seulement USDC pour correspondre au tableau
 
 const BAD_BASE_SUFFIX = /(UP|DOWN|BULL|BEAR)(\d+X)?$/i
 
@@ -271,7 +271,8 @@ const popularRows = computed(() =>
 const topGainersRows = computed(() =>
   filtered.value
     .slice()
-    .sort((a, b) => b.pct - a.pct)
+    .filter((r) => r.pct > 0) // Seulement les actifs en hausse
+    .sort((a, b) => b.pct - a.pct) // Trier par pourcentage décroissant
     .slice(0, topN),
 )
 

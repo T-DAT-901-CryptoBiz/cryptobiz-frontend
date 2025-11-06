@@ -86,11 +86,13 @@
 
             <td class="px-4 py-3">
               <ChartsSparkline
+                v-if="r.spark && r.spark.length > 0"
                 :points="r.spark"
-                :positive="r.spark.at(-1)! >= r.spark[0]"
+                :positive="(r.spark.at(-1) ?? 0) >= (r.spark[0] ?? 0)"
                 :width="160"
                 :height="36"
               />
+              <div v-else class="h-9 w-40 rounded bg-white/10 animate-pulse" />
             </td>
           </tr>
 
@@ -179,37 +181,44 @@ const pool = computed<string[]>(() =>
 )
 const sortKey = ref<keyof Row>('vol24')
 const sortDir = ref<'asc' | 'desc'>('desc')
+const isVolatilitySort = ref(false) // Flag pour savoir si on trie par volatilité
 const page = ref(1)
 const perPage = ref(props.pageSize)
 
 const loading = ref(false)
 const cache = reactive(new Map<string, Row>())
 
-// Initialiser le cache avec les données de all24hData si disponibles
+// Initialiser et mettre à jour le cache avec les données de all24hData
 watch(
   () => props.all24hData,
   (data) => {
     if (data && Array.isArray(data)) {
       for (const ticker of data) {
-        if (ticker.symbol && !cache.has(ticker.symbol)) {
-          // Créer une Row partielle avec les données disponibles
+        if (ticker.symbol) {
+          // Toujours mettre à jour les données de base depuis all24hData
+          // pour garantir la cohérence avec MarketHighlights
+          const existing = cache.get(ticker.symbol)
           cache.set(ticker.symbol, {
             symbol: ticker.symbol,
             price: Number(ticker.lastPrice ?? 0),
             ch24: Number(ticker.priceChangePercent ?? 0),
             vol24: Number(ticker.quoteVolume ?? 0),
-            spark: [], // Sera rempli lors du chargement complet
+            spark: existing?.spark ?? [], // Conserver les sparklines si elles existent
           })
         }
       }
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 )
 
 // Trier le pool complet basé sur les données en cache
-const sortedPool = computed(() => {
+// Utiliser un watch au lieu d'un computed pour éviter les recalculs constants
+const sortedPool = ref<string[]>([])
+
+function updateSortedPool() {
   const poolSymbols = [...pool.value]
+
   // Trier les symboles basés sur les données en cache
   poolSymbols.sort((symA, symB) => {
     const rowA = cache.get(symA)
@@ -220,12 +229,34 @@ const sortedPool = computed(() => {
     if (!rowA) return 1
     if (!rowB) return -1
 
-    const va = rowA[sortKey.value]
-    const vb = rowB[sortKey.value]
+    let va: number
+    let vb: number
+
+    // Pour la volatilité, utiliser la valeur absolue de ch24
+    if (isVolatilitySort.value && sortKey.value === 'ch24') {
+      va = Math.abs(rowA.ch24)
+      vb = Math.abs(rowB.ch24)
+    } else {
+      const valA = rowA[sortKey.value]
+      const valB = rowB[sortKey.value]
+      va = typeof valA === 'number' ? valA : 0
+      vb = typeof valB === 'number' ? valB : 0
+    }
+
     return (sortDir.value === 'asc' ? 1 : -1) * (va > vb ? 1 : va < vb ? -1 : 0)
   })
-  return poolSymbols
-})
+
+  sortedPool.value = poolSymbols
+}
+
+// Recalculer le tri seulement quand pool, sortKey, sortDir ou isVolatilitySort changent
+watch(
+  [pool, sortKey, sortDir, isVolatilitySort],
+  () => {
+    updateSortedPool()
+  },
+  { immediate: true },
+)
 
 // Paginer après le tri
 const start = computed(() => (page.value - 1) * perPage.value)
@@ -307,12 +338,12 @@ async function makeRow(sym: string): Promise<Row> {
   }
 }
 
-let liveId: number | null = null
+let liveId: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   if ((props.autoRefreshMs ?? 0) > 0) {
     liveId = globalThis.setInterval(() => {
       void loadAllDataForSort()
-    }, props.autoRefreshMs!)
+    }, props.autoRefreshMs!) as ReturnType<typeof setInterval>
   }
   // Charger les sparklines après le montage
   setTimeout(() => {
@@ -330,7 +361,7 @@ watch(
     if ((ms ?? 0) > 0) {
       liveId = globalThis.setInterval(() => {
         void loadAllDataForSort()
-      }, ms!)
+      }, ms!) as ReturnType<typeof setInterval>
     }
   },
 )
@@ -339,8 +370,20 @@ watch(
 async function loadRowData(sym: string) {
   if (import.meta.server) return
   try {
+    const existing = cache.get(sym)
     const fullRow = await makeRow(sym)
-    cache.set(sym, fullRow)
+    // Préserver les données de base de all24hData si elles existent
+    // car elles sont plus à jour et cohérentes avec MarketHighlights
+    if (existing && existing.price > 0 && existing.ch24 !== 0) {
+      cache.set(sym, {
+        ...fullRow,
+        price: existing.price,
+        ch24: existing.ch24,
+        vol24: existing.vol24,
+      })
+    } else {
+      cache.set(sym, fullRow)
+    }
   } catch {
     // Ignore errors
   }
@@ -380,10 +423,24 @@ async function loadAllDataForSort() {
       // Charger d'abord la page courante en priorité
       const batchSize = 10
       for (let i = 0; i < currentPageSyms.length; i += batchSize) {
-        const batch = currentPageSyms.slice(i, i + batchSize)
+        const batch = currentPageSyms.slice(i, i + batchSize).filter(Boolean)
         const res = await Promise.allSettled(batch.map(makeRow))
         res.forEach((p, idx) => {
-          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+          if (p.status === 'fulfilled' && batch[idx]) {
+            const sym = batch[idx]
+            const existing = cache.get(sym)
+            // Préserver les données de base de all24hData
+            if (existing && existing.price > 0 && existing.ch24 !== 0) {
+              cache.set(sym, {
+                ...p.value,
+                price: existing.price,
+                ch24: existing.ch24,
+                vol24: existing.vol24,
+              })
+            } else {
+              cache.set(sym, p.value)
+            }
+          }
         })
       }
     }
@@ -397,10 +454,24 @@ async function loadAllDataForSort() {
       // Charger par lots pour éviter de surcharger l'API
       const batchSize = 50
       for (let i = 0; i < previewSyms.length; i += batchSize) {
-        const batch = previewSyms.slice(i, i + batchSize)
+        const batch = previewSyms.slice(i, i + batchSize).filter(Boolean)
         const res = await Promise.allSettled(batch.map(makeRow))
         res.forEach((p, idx) => {
-          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+          if (p.status === 'fulfilled' && batch[idx]) {
+            const sym = batch[idx]
+            const existing = cache.get(sym)
+            // Préserver les données de base de all24hData
+            if (existing && existing.price > 0 && existing.ch24 !== 0) {
+              cache.set(sym, {
+                ...p.value,
+                price: existing.price,
+                ch24: existing.ch24,
+                vol24: existing.vol24,
+              })
+            } else {
+              cache.set(sym, p.value)
+            }
+          }
         })
       }
     }
@@ -432,12 +503,32 @@ watch(page, () => {
 // Les données sont déjà triées via sortedPool, donc on retourne rows directement
 const sorted = computed(() => rows.value)
 
-function setSort(k: keyof Row) {
-  if (sortKey.value === k) {
+function setSort(k: keyof Row | 'volatility', dir?: 'asc' | 'desc') {
+  if (dir !== undefined) {
+    // Si une direction est fournie, l'utiliser directement
+    if (k === 'volatility') {
+      sortKey.value = 'ch24'
+      sortDir.value = dir
+      isVolatilitySort.value = true
+    } else {
+      sortKey.value = k as keyof Row
+      sortDir.value = dir
+      isVolatilitySort.value = false
+    }
+  } else if (sortKey.value === k || (k === 'volatility' && isVolatilitySort.value)) {
+    // Si on clique sur la même colonne, inverser la direction
     sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
   } else {
-    sortKey.value = k
-    sortDir.value = 'desc'
+    // Nouvelle colonne, tri décroissant par défaut
+    if (k === 'volatility') {
+      sortKey.value = 'ch24'
+      sortDir.value = 'desc'
+      isVolatilitySort.value = true
+    } else {
+      sortKey.value = k as keyof Row
+      sortDir.value = 'desc'
+      isVolatilitySort.value = false
+    }
   }
   // Retourner à la page 1 lors du changement de tri
   page.value = 1
@@ -446,6 +537,14 @@ function setSort(k: keyof Row) {
 const isUniverseLoading = computed(() => !props.symbols?.length && universe.value.length === 0)
 const isPageLoading = computed(() => viewSymbols.value.some((s) => !cache.has(s)))
 const missingCount = computed(() => Math.max(0, viewSymbols.value.length - rows.value.length))
+
+// Vérifier si toutes les sparklines de la page courante sont chargées
+const areSparklinesLoaded = computed(() => {
+  return viewSymbols.value.every((sym) => {
+    const cached = cache.get(sym)
+    return cached && cached.spark && cached.spark.length > 0
+  })
+})
 
 const { list: watchlist, toggle: toggleWatchlist } = useWatchlist()
 
@@ -509,5 +608,5 @@ function fullName(base: string): string {
   return FULL_NAMES[base] || base
 }
 
-defineExpose({ maps, setSort })
+defineExpose({ maps, setSort, areSparklinesLoaded })
 </script>
