@@ -86,11 +86,13 @@
 
             <td class="px-4 py-3">
               <ChartsSparkline
+                v-if="r.spark && r.spark.length > 0"
                 :points="r.spark"
-                :positive="r.spark.at(-1)! >= r.spark[0]"
+                :positive="(r.spark.at(-1) ?? 0) >= (r.spark[0] ?? 0)"
                 :width="160"
                 :height="36"
               />
+              <div v-else class="h-9 w-40 rounded bg-white/10 animate-pulse" />
             </td>
           </tr>
 
@@ -307,12 +309,12 @@ async function makeRow(sym: string): Promise<Row> {
   }
 }
 
-let liveId: number | null = null
+let liveId: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   if ((props.autoRefreshMs ?? 0) > 0) {
     liveId = globalThis.setInterval(() => {
       void loadAllDataForSort()
-    }, props.autoRefreshMs!)
+    }, props.autoRefreshMs!) as ReturnType<typeof setInterval>
   }
   // Charger les sparklines après le montage
   setTimeout(() => {
@@ -330,7 +332,7 @@ watch(
     if ((ms ?? 0) > 0) {
       liveId = globalThis.setInterval(() => {
         void loadAllDataForSort()
-      }, ms!)
+      }, ms!) as ReturnType<typeof setInterval>
     }
   },
 )
@@ -447,6 +449,14 @@ const isUniverseLoading = computed(() => !props.symbols?.length && universe.valu
 const isPageLoading = computed(() => viewSymbols.value.some((s) => !cache.has(s)))
 const missingCount = computed(() => Math.max(0, viewSymbols.value.length - rows.value.length))
 
+// Vérifier si toutes les sparklines de la page courante sont chargées
+const areSparklinesLoaded = computed(() => {
+  return viewSymbols.value.every((sym) => {
+    const cached = cache.get(sym)
+    return cached && cached.spark && cached.spark.length > 0
+  })
+})
+
 const { list: watchlist, toggle: toggleWatchlist } = useWatchlist()
 
 function isFav(sym: string) {
@@ -509,5 +519,5 @@ function fullName(base: string): string {
   return FULL_NAMES[base] || base
 }
 
-defineExpose({ maps, setSort })
+defineExpose({ maps, setSort, areSparklinesLoaded })
 </script>
