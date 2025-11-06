@@ -118,6 +118,7 @@ export default defineEventHandler(async (event: H3Event) => {
           picture,
           provider: 'google',
           googleId,
+          role: 'user',
         })
       }
     }

@@ -11,6 +11,7 @@ export interface User {
   picture?: string
   provider: 'local' | 'google'
   googleId?: string
+  role: 'user' | 'admin'
   createdAt: string
   updatedAt: string
 }
@@ -31,7 +32,20 @@ async function loadUsers(): Promise<User[]> {
   }
   try {
     const content = await readFile(USERS_FILE, 'utf-8')
-    return JSON.parse(content)
+    const users = JSON.parse(content) as User[]
+    // Migration: ajouter le rôle 'user' par défaut aux utilisateurs existants qui n'en ont pas
+    let needsSave = false
+    const migratedUsers = users.map((user) => {
+      if (!user.role) {
+        needsSave = true
+        return { ...user, role: 'user' as const }
+      }
+      return user
+    })
+    if (needsSave) {
+      await saveUsers(migratedUsers)
+    }
+    return migratedUsers
   } catch {
     return []
   }
@@ -64,6 +78,7 @@ export async function createUser(data: {
   picture?: string
   provider: 'local' | 'google'
   googleId?: string
+  role?: 'user' | 'admin'
 }): Promise<User> {
   const users = await loadUsers()
   const now = new Date().toISOString()
@@ -82,6 +97,7 @@ export async function createUser(data: {
     picture: data.picture,
     provider: data.provider,
     googleId: data.googleId,
+    role: data.role || 'user',
     createdAt: now,
     updatedAt: now,
   }

@@ -14,6 +14,7 @@ export function useAuth() {
 
   const user = computed(() => authState.value.user)
   const isAuthenticated = computed(() => !!authState.value.user)
+  const isAdmin = computed(() => authState.value.user?.role === 'admin')
   const pending = computed(() => authState.value.pending)
 
   async function fetchUser() {
@@ -66,6 +67,7 @@ export function useAuth() {
   return {
     user,
     isAuthenticated,
+    isAdmin,
     pending,
     login,
     register,
