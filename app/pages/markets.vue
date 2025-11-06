@@ -70,20 +70,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
 import { useFuturesUniverse } from '~/composables/useFuturesUniverse'
 import { useAll24h } from '~/composables/useAll24h'
 
 const q = ref('')
-const cat = ref<'favorites' | 'spot' | 'futures' | 'all'>('all')
+const cat = ref<'favorites' | 'all'>('all')
 const tag = ref<'all' | 'trending' | 'gainers' | 'losers' | 'volume' | string>('all')
 
 function onSearch(v: string) {
   q.value = (v ?? '').trim()
 }
 function onFilterChange(p: { category: string; tag: string }) {
-  cat.value = (p.category as 'favorites' | 'spot' | 'futures' | 'all') || 'all'
+  cat.value = (p.category as 'favorites' | 'all') || 'all'
   tag.value = (p.tag as 'all' | 'trending' | 'gainers' | 'losers' | 'volume' | string) || 'all'
 }
 
@@ -93,7 +93,10 @@ const { symbols: futUni, pending: futPending } = useFuturesUniverse() // Ex: ['B
 const { rows, pending: all24hPending, refresh } = useAll24h() // rows: Ticker24h[]
 onMounted(() => refresh())
 
-const tableRef = ref<{ areSparklinesLoaded?: { value: boolean } } | null>(null)
+const tableRef = ref<{
+  areSparklinesLoaded?: { value: boolean }
+  setSort?: (k: 'price' | 'ch24' | 'vol24' | 'volatility', dir?: 'asc' | 'desc') => void
+} | null>(null)
 
 // Calculer si les données de base sont chargées
 const areBaseDataLoaded = computed(() => {
@@ -169,13 +172,16 @@ function splitSymbol(sym: string) {
 const { list: favoritesList } = useWatchlist()
 
 const baseUniverse = computed<string[]>(() => {
-  if (cat.value === 'spot') return spotUni.value
-  if (cat.value === 'futures') return futUni.value
+  // Filtrer pour ne garder que les paires /USDC
+  const allSymbols = Array.from(new Set([...spotUni.value, ...futUni.value])).filter((s) =>
+    s.endsWith('USDC'),
+  )
+
   if (cat.value === 'favorites') {
     const favSet = new Set(favoritesList.value)
-    return Array.from(new Set([...spotUni.value, ...futUni.value])).filter((s) => favSet.has(s))
+    return allSymbols.filter((s) => favSet.has(s))
   }
-  return Array.from(new Set([...spotUni.value, ...futUni.value]))
+  return allSymbols
 })
 
 const spotMetrics = computed(() => {
@@ -195,7 +201,8 @@ function topSetBy(key: 'pct' | 'vol' | 'trades', dir: 'asc' | 'desc', limit = 30
   const arr: Array<{ sym: string; v: number }> = []
   for (const [sym, m] of spotMetrics.value) {
     const { quote } = splitSymbol(sym)
-    if (!STABLES.includes(quote)) continue // spot stable quote uniquement
+    // Ne garder que les paires USDC pour correspondre au filtre du tableau
+    if (quote !== 'USDC') continue
     const v = m[key]
     arr.push({ sym, v: Number.isFinite(v) ? v : 0 })
   }
@@ -247,5 +254,40 @@ function matchesSearch(sym: string, query: string): boolean {
 
 const filtered = computed<string[]>(() =>
   baseUniverse.value.filter((sym) => passTag(sym) && matchesSearch(sym, q.value)),
+)
+
+// Tri automatique selon le tag sélectionné (une seule fois lors du changement de tag)
+const lastTag = ref<string>(tag.value)
+watch(
+  tag,
+  (newTag) => {
+    // Ne déclencher le tri que si le tag a vraiment changé
+    if (newTag === lastTag.value || !tableRef.value?.setSort) return
+    lastTag.value = newTag
+
+    switch (newTag) {
+      case 'gainers':
+        // Tri par pourcentage de changement décroissant (les plus gros gains en premier)
+        tableRef.value.setSort('ch24', 'desc')
+        break
+      case 'losers':
+        // Tri par pourcentage de changement croissant (les plus grosses pertes en premier)
+        tableRef.value.setSort('ch24', 'asc')
+        break
+      case 'volume':
+        // Tri par volume décroissant
+        tableRef.value.setSort('vol24', 'desc')
+        break
+      case 'volatility':
+        // Tri par volatilité (valeur absolue du pourcentage) décroissant
+        tableRef.value.setSort('volatility', 'desc')
+        break
+      default:
+        // Par défaut, tri par volume
+        tableRef.value.setSort('vol24', 'desc')
+        break
+    }
+  },
+  { flush: 'post' },
 )
 </script>

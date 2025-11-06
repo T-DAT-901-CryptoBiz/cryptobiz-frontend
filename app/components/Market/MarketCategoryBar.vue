@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, type Ref } from 'vue'
 
-type CatValue = 'favorites' | 'spot' | 'futures' | 'all'
+type CatValue = 'favorites' | 'all'
 type Cat = { label: string; value: CatValue }
 type Tag = {
   label: string
@@ -87,17 +87,15 @@ const props = withDefaults(
     categories: () =>
       [
         { label: 'Favorites', value: 'favorites' },
-        { label: 'Spot', value: 'spot' },
-        { label: 'Futures', value: 'futures' },
         { label: 'All', value: 'all' },
       ] as Cat[],
     tags: () =>
       [
         { label: 'All', value: 'all', cat: 'all' },
-        { label: 'Winners', value: 'gainers', cat: ['all', 'spot', 'futures'] },
-        { label: 'Losers', value: 'losers', cat: ['all', 'spot', 'futures'] },
-        { label: 'Volume', value: 'volume', cat: ['all', 'spot', 'futures'] },
-        { label: 'Volatility', value: 'volatility', cat: ['all', 'spot', 'futures'] },
+        { label: 'Winners', value: 'gainers', cat: 'all' },
+        { label: 'Losers', value: 'losers', cat: 'all' },
+        { label: 'Volume', value: 'volume', cat: 'all' },
+        { label: 'Volatility', value: 'volatility', cat: 'all' },
       ] as Tag[],
   },
 )
