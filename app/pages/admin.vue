@@ -831,6 +831,307 @@
       </div>
     </div>
 
+    <!-- News Tab -->
+    <div v-if="activeTab === 'news'" class="space-y-6">
+      <div
+        class="rounded-2xl bg-gradient-to-br from-neutral-900/80 to-neutral-900/40 border border-white/10 shadow-2xl overflow-hidden"
+      >
+        <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">News Articles</h2>
+          <div class="flex items-center gap-3">
+            <input
+              v-model="newsSearch"
+              type="text"
+              placeholder="Search news..."
+              class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm"
+              @input="loadNews"
+            />
+            <button
+              @click="loadNews"
+              class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-colors"
+            >
+              <Icon name="lucide:refresh-cw" class="h-4 w-4 inline-block mr-2" />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div v-if="newsPending" class="p-12 text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <p class="text-sm text-white/60 mt-4">Loading news...</p>
+        </div>
+
+        <div v-else-if="newsData.articles.length === 0" class="p-12 text-center">
+          <Icon name="lucide:newspaper" class="h-12 w-12 text-white/20 mx-auto mb-4" />
+          <p class="text-sm text-white/60">No news found</p>
+        </div>
+
+        <div v-else class="divide-y divide-white/5 max-h-[600px] overflow-y-auto">
+          <div
+            v-for="article in newsData.articles"
+            :key="article.id"
+            class="p-6 hover:bg-white/5 transition-colors"
+          >
+            <div class="flex items-start gap-4">
+              <div
+                v-if="article.image_url"
+                class="w-24 h-24 rounded-lg bg-white/5 overflow-hidden flex-shrink-0"
+              >
+                <img
+                  :src="article.image_url"
+                  :alt="article.title"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-4 mb-2">
+                  <h3 class="text-sm font-semibold text-white line-clamp-2">{{ article.title }}</h3>
+                  <span class="text-xs text-white/40 whitespace-nowrap">
+                    {{ new Date(article.publish_date).toLocaleDateString() }}
+                  </span>
+                </div>
+                <p v-if="article.description" class="text-xs text-white/60 line-clamp-2 mb-2">
+                  {{ article.description }}
+                </p>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <a
+                    :href="article.link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-xs text-blue-400 hover:text-blue-300 transition-colors inline-flex items-center gap-1"
+                  >
+                    <Icon name="lucide:external-link" class="h-3 w-3" />
+                    View Article
+                  </a>
+                  <span v-if="article.category" class="text-xs text-white/50">
+                    Category: {{ article.category }}
+                  </span>
+                  <span v-if="article.rss_source" class="text-xs text-white/50">
+                    Source: {{ article.rss_source }}
+                  </span>
+                  <span v-if="article.score" class="text-xs text-white/50">
+                    Score: {{ article.score }}
+                  </span>
+                </div>
+                <div
+                  v-if="article.tickers && article.tickers.length > 0"
+                  class="mt-2 flex flex-wrap gap-1"
+                >
+                  <span
+                    v-for="ticker in article.tickers"
+                    :key="ticker"
+                    class="px-2 py-0.5 rounded text-xs bg-white/5 text-white/70 border border-white/10"
+                  >
+                    {{ ticker }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="newsData.total > newsData.per_page"
+          class="px-6 py-4 border-t border-white/10 flex items-center justify-between"
+        >
+          <div class="text-sm text-white/60">
+            Showing {{ (newsData.page - 1) * newsData.per_page + 1 }} to
+            {{ Math.min(newsData.page * newsData.per_page, newsData.total) }} of
+            {{ newsData.total }} articles
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              @click="newsPage = Math.max(1, newsPage - 1)"
+              :disabled="newsPage === 1"
+              class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
+            >
+              Previous
+            </button>
+            <span class="text-sm text-white/60 px-3">
+              Page {{ newsPage }} of {{ Math.ceil(newsData.total / newsData.per_page) }}
+            </span>
+            <button
+              @click="
+                newsPage = Math.min(Math.ceil(newsData.total / newsData.per_page), newsPage + 1)
+              "
+              :disabled="newsPage >= Math.ceil(newsData.total / newsData.per_page)"
+              class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Klines Tab -->
+    <div v-if="activeTab === 'klines'" class="space-y-6">
+      <div
+        class="rounded-2xl bg-gradient-to-br from-neutral-900/80 to-neutral-900/40 border border-white/10 shadow-2xl overflow-hidden"
+      >
+        <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Klines Data</h2>
+          <div class="flex items-center gap-3">
+            <input
+              v-model="klinesSymbol"
+              type="text"
+              placeholder="Symbol (e.g., BTCUSDT)"
+              class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm uppercase"
+              @input="loadKlines"
+            />
+            <select
+              v-model="klinesInterval"
+              class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm"
+              @change="loadKlines"
+            >
+              <option value="1s">1s</option>
+              <option value="1m">1m</option>
+              <option value="3m">3m</option>
+              <option value="5m">5m</option>
+              <option value="15m">15m</option>
+              <option value="30m">30m</option>
+              <option value="1h">1h</option>
+              <option value="2h">2h</option>
+              <option value="4h">4h</option>
+              <option value="6h">6h</option>
+              <option value="8h">8h</option>
+              <option value="12h">12h</option>
+              <option value="1d">1d</option>
+              <option value="3d">3d</option>
+              <option value="1w">1w</option>
+              <option value="1M">1M</option>
+            </select>
+            <input
+              v-model.number="klinesLimit"
+              type="number"
+              min="1"
+              max="1000"
+              placeholder="Limit"
+              class="w-24 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm"
+              @input="loadKlines"
+            />
+            <button
+              @click="loadKlines"
+              class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-medium transition-colors"
+            >
+              <Icon name="lucide:refresh-cw" class="h-4 w-4 inline-block mr-2" />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div v-if="klinesPending" class="p-12 text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <p class="text-sm text-white/60 mt-4">Loading klines...</p>
+        </div>
+
+        <div v-else-if="klinesData.klines.length === 0" class="p-12 text-center">
+          <Icon name="lucide:trending-up" class="h-12 w-12 text-white/20 mx-auto mb-4" />
+          <p class="text-sm text-white/60">No klines data found</p>
+        </div>
+
+        <div v-else class="overflow-x-auto">
+          <div class="px-6 py-4 text-sm text-white/60 mb-2">
+            Showing {{ klinesData.count }} klines for {{ klinesData.symbol }} ({{
+              klinesData.interval
+            }})
+          </div>
+          <table class="w-full">
+            <thead class="bg-white/5 border-b border-white/10">
+              <tr>
+                <th
+                  class="px-6 py-3 text-left text-xs font-semibold text-white/70 uppercase tracking-wider"
+                >
+                  Timestamp
+                </th>
+                <th
+                  class="px-6 py-3 text-right text-xs font-semibold text-white/70 uppercase tracking-wider"
+                >
+                  Open
+                </th>
+                <th
+                  class="px-6 py-3 text-right text-xs font-semibold text-white/70 uppercase tracking-wider"
+                >
+                  High
+                </th>
+                <th
+                  class="px-6 py-3 text-right text-xs font-semibold text-white/70 uppercase tracking-wider"
+                >
+                  Low
+                </th>
+                <th
+                  class="px-6 py-3 text-right text-xs font-semibold text-white/70 uppercase tracking-wider"
+                >
+                  Close
+                </th>
+                <th
+                  class="px-6 py-3 text-right text-xs font-semibold text-white/70 uppercase tracking-wider"
+                >
+                  Volume
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              <tr
+                v-for="kline in klinesData.klines"
+                :key="kline.timestamp"
+                class="hover:bg-white/5 transition-colors"
+              >
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-white/90">
+                  {{ new Date(kline.timestamp * 1000).toLocaleString() }}
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-white/90 text-right tabular-nums"
+                >
+                  ${{
+                    kline.open_price.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 8,
+                    })
+                  }}
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-emerald-400 text-right tabular-nums"
+                >
+                  ${{
+                    kline.high_price.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 8,
+                    })
+                  }}
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-rose-400 text-right tabular-nums"
+                >
+                  ${{
+                    kline.low_price.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 8,
+                    })
+                  }}
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-white/90 text-right tabular-nums"
+                >
+                  ${{
+                    kline.close_price.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 8,
+                    })
+                  }}
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-white/70 text-right tabular-nums"
+                >
+                  {{ kline.volume_base.toLocaleString(undefined, { maximumFractionDigits: 2 }) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- Favorites Tab -->
     <div v-if="activeTab === 'favorites'" class="space-y-6">
       <div
@@ -1452,6 +1753,8 @@ const tabs = [
   { id: 'alerts', label: 'Alerts', icon: 'lucide:bell' },
   { id: 'portfolios', label: 'Portfolios', icon: 'lucide:wallet' },
   { id: 'favorites', label: 'Favorites', icon: 'lucide:star' },
+  { id: 'news', label: 'News', icon: 'lucide:newspaper' },
+  { id: 'klines', label: 'Klines', icon: 'lucide:trending-up' },
 ]
 
 // Users
@@ -1529,6 +1832,58 @@ const editTransactionModal = ref<{
 })
 
 const expandedTransactions = ref<Record<string, boolean>>({})
+
+// News
+const newsData = ref<{
+  articles: Array<{
+    id: number
+    title: string
+    link: string
+    description?: string | null
+    category?: string | null
+    rss_source?: string | null
+    publish_date: string
+    create_time?: string
+    image_url?: string | null
+    tickers?: string[] | null
+    score?: number | null
+  }>
+  total: number
+  page: number
+  per_page: number
+}>({
+  articles: [],
+  total: 0,
+  page: 1,
+  per_page: 50,
+})
+const newsPending = ref(false)
+const newsSearch = ref('')
+const newsPage = ref(1)
+
+// Klines
+const klinesData = ref<{
+  symbol: string
+  interval: string
+  klines: Array<{
+    timestamp: number
+    open_price: number
+    high_price: number
+    low_price: number
+    close_price: number
+    volume_base: number
+  }>
+  count: number
+}>({
+  symbol: 'BTCUSDT',
+  interval: '1h',
+  klines: [],
+  count: 0,
+})
+const klinesPending = ref(false)
+const klinesSymbol = ref('BTCUSDT')
+const klinesInterval = ref('1h')
+const klinesLimit = ref(100)
 
 // Portfolios
 const portfolios = ref<UserPortfolio[]>([])
@@ -1721,6 +2076,73 @@ async function loadFavorites() {
   }
 }
 
+// News functions
+async function loadNews() {
+  try {
+    newsPending.value = true
+    const response = await $fetch<{
+      articles: Array<{
+        id: number
+        title: string
+        link: string
+        description?: string | null
+        category?: string | null
+        rss_source?: string | null
+        publish_date: string
+        create_time?: string
+        image_url?: string | null
+        tickers?: string[] | null
+        score?: number | null
+      }>
+      total: number
+      page: number
+      per_page: number
+    }>('/api/admin/news', {
+      query: {
+        page: newsPage.value,
+        per_page: 50,
+        search: newsSearch.value || undefined,
+      },
+    })
+    newsData.value = response
+  } catch (error) {
+    console.error('Error loading news:', error)
+  } finally {
+    newsPending.value = false
+  }
+}
+
+// Klines functions
+async function loadKlines() {
+  try {
+    klinesPending.value = true
+    const response = await $fetch<{
+      symbol: string
+      interval: string
+      klines: Array<{
+        timestamp: number
+        open_price: number
+        high_price: number
+        low_price: number
+        close_price: number
+        volume_base: number
+      }>
+      count: number
+    }>('/api/admin/klines', {
+      query: {
+        symbol: klinesSymbol.value.toUpperCase(),
+        interval: klinesInterval.value,
+        limit: klinesLimit.value,
+      },
+    })
+    klinesData.value = response
+  } catch (error) {
+    console.error('Error loading klines:', error)
+  } finally {
+    klinesPending.value = false
+  }
+}
+
 async function loadDashboard() {
   await Promise.all([loadUsers(), loadAlerts(), loadPortfolios(), loadFavorites()])
 }
@@ -1906,6 +2328,12 @@ watch(activeTab, (tab) => {
   if (tab === 'alerts' && alerts.value.length === 0) loadAlerts()
   if (tab === 'portfolios' && portfolios.value.length === 0) loadPortfolios()
   if (tab === 'favorites' && favorites.value.length === 0) loadFavorites()
+  if (tab === 'news' && newsData.value.articles.length === 0) loadNews()
+  if (tab === 'klines' && klinesData.value.klines.length === 0) loadKlines()
+})
+
+watch(newsPage, () => {
+  if (activeTab.value === 'news') loadNews()
 })
 
 onMounted(() => {

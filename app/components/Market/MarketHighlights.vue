@@ -166,7 +166,7 @@ onMounted(async () => {
   sym2Quote.value = mapQ
 })
 
-const ALLOWED_QUOTES = new Set(['USDC']) // Seulement USDC pour correspondre au tableau
+const ALLOWED_QUOTES = new Set(['USDT']) // Seulement USDT pour correspondre au tableau
 
 const BAD_BASE_SUFFIX = /(UP|DOWN|BULL|BEAR)(\d+X)?$/i
 

@@ -172,9 +172,9 @@ function splitSymbol(sym: string) {
 const { list: favoritesList } = useWatchlist()
 
 const baseUniverse = computed<string[]>(() => {
-  // Filtrer pour ne garder que les paires /USDC
+  // Filtrer pour ne garder que les paires /USDT
   const allSymbols = Array.from(new Set([...spotUni.value, ...futUni.value])).filter((s) =>
-    s.endsWith('USDC'),
+    s.endsWith('USDT'),
   )
 
   if (cat.value === 'favorites') {
@@ -201,8 +201,8 @@ function topSetBy(key: 'pct' | 'vol' | 'trades', dir: 'asc' | 'desc', limit = 30
   const arr: Array<{ sym: string; v: number }> = []
   for (const [sym, m] of spotMetrics.value) {
     const { quote } = splitSymbol(sym)
-    // Ne garder que les paires USDC pour correspondre au filtre du tableau
-    if (quote !== 'USDC') continue
+    // Ne garder que les paires USDT pour correspondre au filtre du tableau
+    if (quote !== 'USDT') continue
     const v = m[key]
     arr.push({ sym, v: Number.isFinite(v) ? v : 0 })
   }
