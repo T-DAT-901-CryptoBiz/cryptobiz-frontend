@@ -382,10 +382,10 @@ async function loadAllDataForSort() {
       // Charger d'abord la page courante en priorité
       const batchSize = 10
       for (let i = 0; i < currentPageSyms.length; i += batchSize) {
-        const batch = currentPageSyms.slice(i, i + batchSize)
+        const batch = currentPageSyms.slice(i, i + batchSize).filter(Boolean)
         const res = await Promise.allSettled(batch.map(makeRow))
         res.forEach((p, idx) => {
-          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+          if (p.status === 'fulfilled' && batch[idx]) cache.set(batch[idx], p.value)
         })
       }
     }
@@ -399,10 +399,10 @@ async function loadAllDataForSort() {
       // Charger par lots pour éviter de surcharger l'API
       const batchSize = 50
       for (let i = 0; i < previewSyms.length; i += batchSize) {
-        const batch = previewSyms.slice(i, i + batchSize)
+        const batch = previewSyms.slice(i, i + batchSize).filter(Boolean)
         const res = await Promise.allSettled(batch.map(makeRow))
         res.forEach((p, idx) => {
-          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+          if (p.status === 'fulfilled' && batch[idx]) cache.set(batch[idx], p.value)
         })
       }
     }
