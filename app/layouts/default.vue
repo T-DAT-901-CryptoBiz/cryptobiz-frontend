@@ -132,6 +132,13 @@
         </div>
         <div class="ml-auto flex items-center gap-2">
           <slot name="top-actions" />
+          <button
+            class="p-2 rounded-lg bg-white/5 hover:bg-white/10"
+            @click="toggleTheme"
+            :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+          >
+            <Icon :name="isDark ? 'lucide:sun' : 'lucide:moon'" class="h-5 w-5" />
+          </button>
           <div v-if="isAuthenticated && user?.name" class="text-sm text-white/70">
             {{ user.name }}
           </div>
@@ -149,10 +156,12 @@
 import { useRoute, useRouter } from 'vue-router'
 import { useState } from '#app'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useTheme } from '~/composables/useTheme'
 
 const route = useRoute()
 const router = useRouter()
 const { user, isAuthenticated, logout } = useAuth()
+const { isDark, toggleTheme } = useTheme()
 const isMobileOpen = useState<boolean>('sb:mobileOpen', () => false)
 const isCollapsed = useState<boolean>('sb:collapsed', () => false)
 
@@ -167,6 +176,12 @@ const nav: NavItem[] = [
   { to: '/markets', label: 'Markets', icon: 'lucide:line-chart' },
   { to: '/watchlist', label: 'Watchlist', icon: 'lucide:star' },
   { to: '/news', label: 'News', icon: 'lucide:newspaper' },
+  { to: '/compare', label: 'Compare', icon: 'lucide:git-compare' },
+  { to: '/portfolio', label: 'Portfolio', icon: 'lucide:wallet' },
+  { to: '/alerts', label: 'Alerts', icon: 'lucide:bell' },
+  { to: '/screener', label: 'Screener', icon: 'lucide:filter' },
+  { to: '/events', label: 'Events', icon: 'lucide:calendar' },
+  { to: '/sentiment', label: 'Sentiment', icon: 'lucide:trending-up' },
 ]
 
 const isActive = (to: string) => route.path === to || route.path.startsWith(to + '/')
@@ -176,6 +191,12 @@ const titles: Record<string, string> = {
   '/markets': 'Markets',
   '/watchlist': 'Watchlist',
   '/news': 'News',
+  '/compare': 'Compare',
+  '/portfolio': 'Portfolio',
+  '/alerts': 'Alerts',
+  '/screener': 'Screener',
+  '/events': 'Events',
+  '/sentiment': 'Sentiment',
 }
 const pageTitle = computed(() => (route.meta.title as string) || titles[route.path] || 'CryptoBiz')
 

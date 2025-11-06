@@ -13,6 +13,14 @@
           {{ filteredSymbols.length }} assets
         </span>
         <button
+          v-if="filteredSymbols.length > 0"
+          type="button"
+          class="px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/70"
+          @click="exportWatchlist"
+        >
+          Export CSV
+        </button>
+        <button
           v-if="symbols.length"
           type="button"
           class="px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 text-rose-300/90"
@@ -86,6 +94,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
 import { useFuturesUniverse } from '~/composables/useFuturesUniverse'
+import { exportToCSV } from '~/composables/useExport'
 
 type Filter = 'all' | 'spot' | 'futures'
 const filters = [
@@ -110,6 +119,19 @@ async function clearAll() {
   for (const sym of symsToRemove) {
     await remove(sym)
   }
+}
+
+function getBaseAsset(symbol: string): string {
+  return splitSymbol(symbol).base
+}
+
+function exportWatchlist() {
+  const headers = ['Symbol', 'Base Asset', 'Full Name']
+  const rows = filteredSymbols.value.map((symbol) => {
+    const base = getBaseAsset(symbol)
+    return [symbol, base, FULL_NAMES[base] || base]
+  })
+  exportToCSV([headers, ...rows], `watchlist_${Date.now()}.csv`)
 }
 
 onMounted(() => {

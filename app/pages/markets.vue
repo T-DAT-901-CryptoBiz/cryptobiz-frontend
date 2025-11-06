@@ -2,12 +2,21 @@
   <div class="space-y-6">
     <ClientOnly>
       <MarketHighlights class="mb-2" />
-      <MarketCategoryBar
-        v-model="cat"
-        v-model:tagValue="tag"
-        @change="onFilterChange"
-        @search="onSearch"
-      />
+      <div class="flex items-center justify-between mb-4">
+        <MarketCategoryBar
+          v-model="cat"
+          v-model:tagValue="tag"
+          @change="onFilterChange"
+          @search="onSearch"
+        />
+        <button
+          v-if="filtered.length > 0"
+          class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm"
+          @click="exportMarkets"
+        >
+          Export CSV
+        </button>
+      </div>
     </ClientOnly>
 
     <MarketTablePro
@@ -74,6 +83,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
 import { useFuturesUniverse } from '~/composables/useFuturesUniverse'
 import { useAll24h } from '~/composables/useAll24h'
+import { exportToCSV } from '~/composables/useExport'
 
 const q = ref('')
 const cat = ref<'favorites' | 'spot' | 'futures' | 'all'>('all')
@@ -246,4 +256,20 @@ function matchesSearch(sym: string, query: string): boolean {
 const filtered = computed<string[]>(() =>
   baseUniverse.value.filter((sym) => passTag(sym) && matchesSearch(sym, q.value)),
 )
+
+function exportMarkets() {
+  const headers = ['Symbol', 'Base Asset', 'Price', '24h Change %', '24h Volume']
+  const rows = filtered.value.map((symbol) => {
+    const ticker = rows.value.find((t) => t.symbol === symbol)
+    const { base } = splitSymbol(symbol)
+    return [
+      symbol,
+      base,
+      ticker?.lastPrice || '0',
+      ticker?.priceChangePercent || '0',
+      ticker?.quoteVolume || '0',
+    ]
+  })
+  exportToCSV([headers, ...rows], `markets_${Date.now()}.csv`)
+}
 </script>
