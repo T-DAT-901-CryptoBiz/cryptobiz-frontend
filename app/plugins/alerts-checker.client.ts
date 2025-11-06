@@ -34,10 +34,20 @@ export default defineNuxtPlugin({
               changePercent?: number
               isActive: boolean
               triggered: boolean
+              createdAt: string
             }>
           }>('/api/alerts')
 
-          const activeAlerts = response.alerts.filter((a) => a.isActive && !a.triggered)
+          // Filtrer les alertes actives non déclenchées et créées il y a plus de 5 secondes
+          // Cela évite de déclencher immédiatement une alerte qui vient d'être créée
+          const now = Date.now()
+          const activeAlerts = response.alerts.filter((a) => {
+            if (!a.isActive || a.triggered) return false
+            // Ignorer les alertes créées il y a moins de 5 secondes
+            const createdAt = new Date(a.createdAt || 0).getTime()
+            const ageInSeconds = (now - createdAt) / 1000
+            return ageInSeconds >= 5
+          })
 
           if (activeAlerts.length === 0) {
             console.log('[Alerts] No active alerts to check')
