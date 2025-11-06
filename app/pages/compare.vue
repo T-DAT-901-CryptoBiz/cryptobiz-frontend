@@ -176,24 +176,38 @@ async function loadComparisonData(index: number, symbol: string) {
   }
 }
 
+const chartData = ref<Record<string, Array<[number, number]>>>({})
+
 const chartSeries = computed(() => {
   const series: Array<{ name: string; data: Array<[number, number]> }> = []
 
-  selectedSymbols.value.forEach((symbol, index) => {
-    if (symbol && comparisonData.value[index]) {
-      // Load klines data for chart
-      const { candles } = useKlines(symbol, '1h', 24)
-      if (candles.value && candles.value.length > 0) {
-        series.push({
-          name: symbol,
-          data: candles.value.map((c) => [c.time * 1000, c.close]),
-        })
-      }
+  selectedSymbols.value.forEach((symbol) => {
+    if (symbol && chartData.value[symbol]) {
+      series.push({
+        name: symbol,
+        data: chartData.value[symbol],
+      })
     }
   })
 
   return series
 })
+
+watch(
+  selectedSymbols,
+  async (symbols) => {
+    for (const symbol of symbols) {
+      if (symbol && !chartData.value[symbol]) {
+        const { candles, refresh } = useKlines(symbol, '1h', 24)
+        await refresh()
+        if (candles.value && candles.value.length > 0) {
+          chartData.value[symbol] = candles.value.map((c) => [c.time * 1000, c.close])
+        }
+      }
+    }
+  },
+  { immediate: true },
+)
 
 const chartOptions = computed(() => ({
   chart: {
