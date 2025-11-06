@@ -57,7 +57,7 @@
         </NuxtLink>
       </nav>
 
-      <!-- User section with logout at bottom -->
+      <!-- User section with admin and logout at bottom -->
       <div
         v-if="isAuthenticated"
         class="mt-auto border-t border-white/10 p-2"
@@ -67,6 +67,22 @@
           <div class="text-xs text-white/50 mb-1">User</div>
           <div class="text-sm text-white truncate font-medium">{{ user.name }}</div>
         </div>
+        <NuxtLink
+          v-if="isAdmin"
+          to="/admin"
+          :title="isCollapsed ? 'Admin' : ''"
+          class="group relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors"
+          :class="isActive('/admin') ? 'bg-white/10 text-white' : 'text-white/80 hover:text-white'"
+        >
+          <Icon name="lucide:shield" class="h-5 w-5 shrink-0" />
+          <span v-if="!isCollapsed" class="truncate">Admin</span>
+          <span
+            v-if="isCollapsed"
+            class="pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity absolute left-14 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md bg-neutral-800 border border-white/10 text-xs whitespace-nowrap"
+          >
+            Admin
+          </span>
+        </NuxtLink>
         <button
           @click="handleLogout"
           :title="isCollapsed ? 'Logout' : ''"
@@ -152,7 +168,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
-const { user, isAuthenticated, logout } = useAuth()
+const { user, isAuthenticated, isAdmin, logout } = useAuth()
 const isMobileOpen = useState<boolean>('sb:mobileOpen', () => false)
 const isCollapsed = useState<boolean>('sb:collapsed', () => false)
 
@@ -184,6 +200,7 @@ const titles: Record<string, string> = {
   '/convert': 'Convert',
   '/watchlist': 'Watchlist',
   '/news': 'News',
+  '/admin': 'Admin Panel',
 }
 const pageTitle = computed(() => (route.meta.title as string) || titles[route.path] || 'CryptoBiz')
 
