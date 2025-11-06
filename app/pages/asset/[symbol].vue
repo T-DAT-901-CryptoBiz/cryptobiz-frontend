@@ -56,6 +56,7 @@
         <ClientOnly>
           <div class="rounded-xl p-3">
             <div
+              v-if="isOurViewAvailable"
               class="relative inline-grid grid-cols-2 rounded-lg border border-white/10 p-1 text-sm"
               role="tablist"
               aria-label="Chart view"
@@ -94,13 +95,13 @@
 
           <div class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
             <ChartsTvAdvancedChart
-              v-if="showTv"
+              v-if="showTv || !isOurViewAvailable"
               :symbol="tvSymbol"
               :interval="interval === '1h' ? '60' : interval.replace('m', '')"
               theme="dark"
             />
             <MarketApexKlinesChart
-              v-else
+              v-else-if="isOurViewAvailable"
               :symbol="symbol"
               :interval="interval"
               @switch-chart="showTv = $event === 'tv'"
@@ -157,9 +158,24 @@ const tvSymbol = computed(() => `BINANCE:${symbol.value}`)
 const interval = ref<Interval>('1h')
 const showTv = ref(true)
 
+// Symboles autorisés pour "Our View"
+const allowedSymbolsForOurView = new Set(['BTC', 'ETH', 'XRP', 'BNB'])
+const base = computed(() => String(symbol.value).replace(/(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/, ''))
+const isOurViewAvailable = computed(() => allowedSymbolsForOurView.has(base.value))
+
+// Forcer TradingView si Our View n'est pas disponible
+watch(
+  [symbol, isOurViewAvailable],
+  ([, available]) => {
+    if (!available) {
+      showTv.value = true
+    }
+  },
+  { immediate: true },
+)
+
 const { data: t, pending } = useTicker(symbol.value)
 
-const base = computed(() => String(symbol.value).replace(/(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/, ''))
 const quote = computed(
   () => String(symbol.value).match(/USDT|FDUSD|USDC|BUSD|TUSD|USD$/)?.[0] ?? '',
 )
