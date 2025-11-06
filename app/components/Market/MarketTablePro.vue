@@ -86,11 +86,13 @@
 
             <td class="px-4 py-3">
               <ChartsSparkline
+                v-if="r.spark && r.spark.length > 0"
                 :points="r.spark"
-                :positive="r.spark.at(-1)! >= r.spark[0]"
+                :positive="(r.spark.at(-1) ?? 0) >= (r.spark[0] ?? 0)"
                 :width="160"
                 :height="36"
               />
+              <div v-else class="h-9 w-40 rounded bg-white/5 animate-pulse"></div>
             </td>
           </tr>
 
@@ -307,7 +309,7 @@ async function makeRow(sym: string): Promise<Row> {
   }
 }
 
-let liveId: number | null = null
+let liveId: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   if ((props.autoRefreshMs ?? 0) > 0) {
     liveId = globalThis.setInterval(() => {
@@ -381,9 +383,9 @@ async function loadAllDataForSort() {
       const batchSize = 10
       for (let i = 0; i < currentPageSyms.length; i += batchSize) {
         const batch = currentPageSyms.slice(i, i + batchSize)
-        const res = await Promise.allSettled(batch.map(makeRow))
+        const res = await Promise.allSettled(batch.filter(Boolean).map(makeRow))
         res.forEach((p, idx) => {
-          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+          if (p.status === 'fulfilled' && batch[idx]) cache.set(batch[idx], p.value)
         })
       }
     }
@@ -398,9 +400,9 @@ async function loadAllDataForSort() {
       const batchSize = 50
       for (let i = 0; i < previewSyms.length; i += batchSize) {
         const batch = previewSyms.slice(i, i + batchSize)
-        const res = await Promise.allSettled(batch.map(makeRow))
+        const res = await Promise.allSettled(batch.filter(Boolean).map(makeRow))
         res.forEach((p, idx) => {
-          if (p.status === 'fulfilled') cache.set(batch[idx], p.value)
+          if (p.status === 'fulfilled' && batch[idx]) cache.set(batch[idx], p.value)
         })
       }
     }
@@ -445,6 +447,13 @@ function setSort(k: keyof Row) {
 
 const isUniverseLoading = computed(() => !props.symbols?.length && universe.value.length === 0)
 const isPageLoading = computed(() => viewSymbols.value.some((s) => !cache.has(s)))
+const areSparklinesLoaded = computed(() => {
+  // Vérifier que les sparklines sont chargées pour tous les symboles de la page courante
+  return viewSymbols.value.every((s) => {
+    const cached = cache.get(s)
+    return cached && cached.spark && cached.spark.length > 0
+  })
+})
 const missingCount = computed(() => Math.max(0, viewSymbols.value.length - rows.value.length))
 
 const { list: watchlist, toggle: toggleWatchlist } = useWatchlist()
@@ -509,5 +518,5 @@ function fullName(base: string): string {
   return FULL_NAMES[base] || base
 }
 
-defineExpose({ maps, setSort })
+defineExpose({ maps, setSort, areSparklinesLoaded })
 </script>

@@ -11,12 +11,61 @@
     </ClientOnly>
 
     <MarketTablePro
+      v-if="areBaseDataLoaded"
+      ref="tableRef"
       :symbols="filtered"
       :page-size="20"
       market="auto"
       :futures-set="futUni"
       :all24h-data="rows"
     />
+    <div v-else class="rounded-2xl bg-neutral-900/60 border border-white/5 overflow-hidden">
+      <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+        <div class="text-sm text-white/70">All Crypto</div>
+        <div class="text-xs text-white/50">
+          <span class="inline-block h-4 w-16 rounded bg-white/10 animate-pulse" />
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="text-white/60">
+            <tr class="[&>th]:px-4 [&>th]:py-3 text-left">
+              <th>#</th>
+              <th>Asset</th>
+              <th>Price</th>
+              <th>24h %</th>
+              <th>24h Volume</th>
+              <th>7d Chart</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="i in 20" :key="'sk-' + i" class="border-t border-white/5">
+              <td class="px-4 py-3">
+                <div class="h-4 w-8 rounded bg-white/10 animate-pulse"></div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="h-5 w-5 rounded-full bg-white/10 animate-pulse"></div>
+                  <div class="h-4 w-24 rounded bg-white/10 animate-pulse"></div>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="h-4 w-20 rounded bg-white/10 animate-pulse"></div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="h-4 w-16 rounded bg-white/10 animate-pulse"></div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="h-4 w-24 rounded bg-white/10 animate-pulse"></div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="h-9 w-40 rounded bg-white/10 animate-pulse"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -38,11 +87,22 @@ function onFilterChange(p: { category: string; tag: string }) {
   tag.value = (p.tag as 'all' | 'trending' | 'gainers' | 'losers' | 'volume' | string) || 'all'
 }
 
-const { universe: spotUni } = useSymbolsUniverse() // Ex: ['BTCUSDT', ...]
-const { symbols: futUni } = useFuturesUniverse() // Ex: ['BTCUSDT', ...] (USDT-M futures)
+const { universe: spotUni, loading: spotLoading } = useSymbolsUniverse() // Ex: ['BTCUSDT', ...]
+const { symbols: futUni, pending: futPending } = useFuturesUniverse() // Ex: ['BTCUSDT', ...] (USDT-M futures)
 
-const { rows, refresh } = useAll24h() // rows: Ticker24h[]
+const { rows, pending: all24hPending, refresh } = useAll24h() // rows: Ticker24h[]
 onMounted(() => refresh())
+
+// Calculer si les données de base sont chargées
+const areBaseDataLoaded = computed(() => {
+  return (
+    !spotLoading.value &&
+    !futPending.value &&
+    !all24hPending.value &&
+    rows.value.length > 0 &&
+    filtered.value.length > 0
+  )
+})
 
 /* ---------- utils ---------- */
 const STABLES = ['USDT', 'FDUSD', 'USDC', 'BUSD', 'TUSD', 'USD']
