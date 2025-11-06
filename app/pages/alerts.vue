@@ -161,40 +161,44 @@ function formatPrice(price: number): string {
   return price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })
 }
 
-function addAlert() {
+async function addAlert() {
   if (!newAlert.value.symbol || newAlert.value.targetPrice <= 0) {
     return
   }
-  alerts.value.push({
-    id: Date.now().toString(),
-    symbol: newAlert.value.symbol.toUpperCase(),
-    condition: newAlert.value.condition,
-    targetPrice: newAlert.value.targetPrice,
-    triggered: false,
-    createdAt: Date.now(),
-  })
-  saveAlerts()
-  newAlert.value = { symbol: '', condition: 'above', targetPrice: 0 }
-  showAddModal.value = false
-}
-
-function deleteAlert(id: string) {
-  alerts.value = alerts.value.filter((a) => a.id !== id)
-  saveAlerts()
-}
-
-function saveAlerts() {
-  if (import.meta.client) {
-    localStorage.setItem('price_alerts', JSON.stringify(alerts.value))
+  try {
+    const alert = await $fetch('/api/alerts', {
+      method: 'POST',
+      body: {
+        symbol: newAlert.value.symbol.toUpperCase(),
+        condition: newAlert.value.condition,
+        targetPrice: newAlert.value.targetPrice,
+      },
+    })
+    alerts.value.push(alert)
+    newAlert.value = { symbol: '', condition: 'above', targetPrice: 0 }
+    showAddModal.value = false
+  } catch (error) {
+    console.error('Error adding alert:', error)
   }
 }
 
-function loadAlerts() {
-  if (import.meta.client) {
-    const saved = localStorage.getItem('price_alerts')
-    if (saved) {
-      alerts.value = JSON.parse(saved)
-    }
+async function deleteAlert(id: string) {
+  try {
+    await $fetch(`/api/alerts/${id}`, {
+      method: 'DELETE',
+    })
+    alerts.value = alerts.value.filter((a) => a.id !== id)
+  } catch (error) {
+    console.error('Error deleting alert:', error)
+  }
+}
+
+async function loadAlerts() {
+  try {
+    const data = await $fetch<Alert[]>('/api/alerts')
+    alerts.value = data
+  } catch (error) {
+    console.error('Error loading alerts:', error)
   }
 }
 
@@ -213,8 +217,17 @@ async function checkAlerts() {
           (alert.condition === 'above' && currentPrice >= alert.targetPrice) ||
           (alert.condition === 'below' && currentPrice <= alert.targetPrice)
 
-        if (shouldTrigger) {
+        if (shouldTrigger && !alert.triggered) {
           alert.triggered = true
+          // Update alert on server
+          try {
+            await $fetch(`/api/alerts/${alert.id}`, {
+              method: 'PUT',
+              body: { triggered: true },
+            })
+          } catch (error) {
+            console.error('Error updating alert:', error)
+          }
           // Show notification
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(`Alert: ${alert.symbol}`, {
@@ -222,7 +235,6 @@ async function checkAlerts() {
               icon: '/cryptobiz-logo.png',
             })
           }
-          saveAlerts()
         }
       }
     } catch (error) {
@@ -231,8 +243,8 @@ async function checkAlerts() {
   }
 }
 
-onMounted(() => {
-  loadAlerts()
+onMounted(async () => {
+  await loadAlerts()
   checkAlerts()
   setInterval(checkAlerts, 10000) // Check every 10 seconds
 

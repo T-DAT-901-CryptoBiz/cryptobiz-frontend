@@ -177,20 +177,16 @@ async function loadComparisonData(index: number, symbol: string) {
 }
 
 const chartSeries = computed(() => {
-  const series: Array<{ name: string; data: number[] }> = []
-  const timestamps: number[] = []
+  const series: Array<{ name: string; data: Array<[number, number]> }> = []
 
   selectedSymbols.value.forEach((symbol, index) => {
     if (symbol && comparisonData.value[index]) {
       // Load klines data for chart
       const { candles } = useKlines(symbol, '1h', 24)
       if (candles.value && candles.value.length > 0) {
-        if (timestamps.length === 0) {
-          timestamps.push(...candles.value.map((c) => c.time))
-        }
         series.push({
           name: symbol,
-          data: candles.value.map((c) => c.close),
+          data: candles.value.map((c) => [c.time * 1000, c.close]),
         })
       }
     }

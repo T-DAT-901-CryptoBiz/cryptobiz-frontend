@@ -245,33 +245,33 @@ function resetFilters() {
   }
 }
 
-function savePreset() {
+async function savePreset() {
   const name = prompt('Preset name:')
   if (!name) return
-  savedPresets.value.push({
-    id: Date.now().toString(),
-    name,
-    filters: { ...filters.value },
-  })
-  savePresets()
+  try {
+    const preset = await $fetch('/api/screener', {
+      method: 'POST',
+      body: {
+        name,
+        filters: { ...filters.value },
+      },
+    })
+    savedPresets.value.push(preset)
+  } catch (error) {
+    console.error('Error saving preset:', error)
+  }
 }
 
 function loadPreset(preset: Preset) {
   filters.value = { ...preset.filters }
 }
 
-function savePresets() {
-  if (import.meta.client) {
-    localStorage.setItem('screener_presets', JSON.stringify(savedPresets.value))
-  }
-}
-
-function loadPresets() {
-  if (import.meta.client) {
-    const saved = localStorage.getItem('screener_presets')
-    if (saved) {
-      savedPresets.value = JSON.parse(saved)
-    }
+async function loadPresets() {
+  try {
+    const data = await $fetch<Preset[]>('/api/screener')
+    savedPresets.value = data
+  } catch (error) {
+    console.error('Error loading presets:', error)
   }
 }
 
@@ -313,7 +313,7 @@ watch(
   { immediate: true },
 )
 
-onMounted(() => {
-  loadPresets()
+onMounted(async () => {
+  await loadPresets()
 })
 </script>
