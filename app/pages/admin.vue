@@ -1743,7 +1743,7 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div class="space-y-6">
         <section
           class="space-y-5 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
         >
@@ -1889,117 +1889,168 @@
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-lg font-semibold text-white">Key REST APIs</h3>
-              <p class="text-sm text-white/60">
-                Concise reference of the endpoints hit by the app.
-              </p>
+              <p class="text-sm text-white/60">Points d'accès critiques regroupés par méthode.</p>
             </div>
             <span class="text-xs text-white/40">{{ totalHttpEndpoints }} endpoints</span>
           </div>
 
-          <div class="space-y-3">
-            <div
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <article
               v-for="endpoint in httpEndpoints"
               :key="`${endpoint.providerLabel}-${endpoint.url}`"
-              class="rounded-2xl border border-white/5 bg-black/30 p-4"
+              class="rounded-xl border border-white/10 bg-black/35 p-4 text-xs text-white/70 transition hover:border-emerald-400/40"
             >
-              <div
-                class="flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-wide text-white/40"
-              >
-                <span class="font-semibold text-white/70">{{ endpoint.method }}</span>
-                <span class="text-white/50">{{ endpoint.providerLabel }}</span>
+              <div class="flex items-center justify-between gap-3">
+                <span
+                  class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-2 py-0.5 font-semibold uppercase tracking-wide text-[10px] text-white/60"
+                >
+                  {{ endpoint.method }}
+                </span>
+                <span class="text-[10px] text-white/50">{{ endpoint.providerLabel }}</span>
               </div>
+
+              <p class="mt-3 text-sm font-semibold text-white">{{ endpoint.name }}</p>
+              <p class="text-[11px] text-white/55">{{ endpoint.usage }}</p>
+
               <code
-                class="mt-2 block truncate rounded-lg bg-black/50 px-2 py-1 font-mono text-[11px] text-white/80"
+                class="mt-3 block truncate rounded bg-black/55 px-2 py-1 font-mono text-[10px] text-white/75"
               >
                 {{ endpoint.url }}
               </code>
-              <p class="mt-2 text-sm font-medium text-white">{{ endpoint.name }}</p>
-              <p class="text-xs text-white/50">{{ endpoint.usage }}</p>
-            </div>
+
+              <div
+                v-if="endpoint.sampleRequest || endpoint.samplePayload || endpoint.sampleResponse"
+                class="mt-3"
+              >
+                <details class="rounded-xl border border-white/10 bg-black/35 p-3">
+                  <summary
+                    class="flex cursor-pointer items-center justify-between text-xs text-white/60"
+                  >
+                    Payloads & samples
+                    <Icon name="lucide:chevron-down" class="h-4 w-4 text-white/40" />
+                  </summary>
+                  <div class="mt-3 space-y-2">
+                    <div v-if="endpoint.sampleRequest">
+                      <p class="text-[11px] uppercase tracking-wide text-white/40">
+                        Sample request
+                      </p>
+                      <pre
+                        class="mt-1 overflow-x-auto rounded bg-black/60 p-2 text-[11px] text-emerald-200/80"
+                        >{{ endpoint.sampleRequest }}
+                      </pre>
+                    </div>
+                    <div v-if="endpoint.samplePayload">
+                      <p class="text-[11px] uppercase tracking-wide text-white/40">
+                        Sample payload
+                      </p>
+                      <pre
+                        class="mt-1 overflow-x-auto rounded bg-black/60 p-2 text-[11px] text-emerald-200/80"
+                        >{{ endpoint.samplePayload }}
+                      </pre>
+                    </div>
+                    <div v-if="endpoint.sampleResponse">
+                      <p class="text-[11px] uppercase tracking-wide text-white/40">
+                        Sample response
+                      </p>
+                      <pre
+                        class="mt-1 overflow-x-auto rounded bg-black/60 p-2 text-[11px] text-emerald-200/80"
+                        >{{ endpoint.sampleResponse }}
+                      </pre>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </article>
           </div>
         </section>
       </div>
 
-      <section class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div
-          class="space-y-4 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 class="text-lg font-semibold text-white">Usage Map</h3>
-              <p class="text-sm text-white/60">Which experiences depend on WebSocket data.</p>
-            </div>
-            <span class="text-xs text-white/40"
-              >{{ totalRealtimeFeatures }} features · {{ totalServiceConsumers }} consumers</span
-            >
+      <section
+        class="space-y-6 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-semibold text-white">Usage Map</h3>
+            <p class="text-sm text-white/60">
+              Panorama des écrans et composants branchés sur les flux temps réel.
+            </p>
           </div>
-
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div
-              v-for="usage in integrationUsage"
-              :key="usage.feature"
-              class="rounded-2xl border border-white/5 bg-black/30 p-4"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold text-white">{{ usage.feature }}</p>
-                  <p class="mt-1 text-xs text-white/60">{{ usage.description }}</p>
-                </div>
-                <Icon name="lucide:radio" class="h-4 w-4 text-emerald-300/70" />
-              </div>
-              <div class="mt-3 space-y-2">
-                <p class="text-[11px] uppercase tracking-wide text-white/40">Components</p>
-                <ul class="space-y-1 text-xs text-white/60">
-                  <li
-                    v-for="component in usage.components"
-                    :key="component.path"
-                    class="flex items-center gap-2"
-                  >
-                    <Icon name="lucide:file-code" class="h-3.5 w-3.5 text-white/40" />
-                    <span class="font-mono text-[11px] text-white/70">{{ component.path }}</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          <span class="text-xs text-white/40"
+            >{{ totalRealtimeFeatures }} features · {{ totalServiceConsumers }} consumers</span
+          >
         </div>
 
-        <div
-          class="space-y-4 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
-        >
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <article
+            v-for="usage in integrationUsage"
+            :key="usage.feature"
+            class="space-y-3 rounded-2xl border border-white/10 bg-neutral-900/80 p-5"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="space-y-1">
+                <p class="text-sm font-semibold text-white">{{ usage.feature }}</p>
+                <p class="text-xs text-white/60">{{ usage.description }}</p>
+              </div>
+              <span
+                class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/60"
+              >
+                {{ usage.serviceId }}
+              </span>
+            </div>
+
+            <div class="flex flex-wrap gap-2 text-[11px] text-white/60">
+              <span
+                v-for="component in usage.components"
+                :key="component.path"
+                class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2 py-0.5"
+                :title="component.path"
+              >
+                <Icon name="lucide:file-code" class="h-3.5 w-3.5 text-white/45" />
+                {{ component.label }}
+              </span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section
+        class="space-y-3 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+      >
+        <div class="flex items-center justify-between gap-3">
           <h3 class="text-lg font-semibold text-white">Integration Checklist</h3>
-          <ul class="space-y-3 text-sm text-white/70">
-            <li class="flex items-start gap-3">
-              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
-              <span>
-                Send a
-                <code class="bg-black/40 px-1 py-0.5 text-[11px] text-emerald-300">ping</code>
-                every 25s while the connection is idle.
-              </span>
-            </li>
-            <li class="flex items-start gap-3">
-              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
-              <span>
-                Prefer
-                <code class="bg-black/40 px-1 py-0.5 text-[11px] text-emerald-300">set_limit</code>
-                instead of reopening a socket when you need additional history.
-              </span>
-            </li>
-            <li class="flex items-start gap-3">
-              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
-              <span>
-                Auto-reconnect with exponential backoff (<span
-                  class="font-mono text-[11px] text-white/70"
-                  >useKlinesWebSocket.ts</span
-                >).
-              </span>
-            </li>
-            <li class="flex items-start gap-3">
-              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
-              <span>Surface WebSocket status to users (badge, banner, toast, etc.).</span>
-            </li>
-          </ul>
+          <span class="text-xs text-white/40">Bonnes pratiques à vérifier</span>
         </div>
+        <ul class="space-y-3 text-sm text-white/70">
+          <li class="flex items-start gap-3">
+            <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
+            <span>
+              Send a
+              <code class="bg-black/40 px-1 py-0.5 text-[11px] text-emerald-300">ping</code> every
+              25s while the connection is idle.
+            </span>
+          </li>
+          <li class="flex items-start gap-3">
+            <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
+            <span>
+              Prefer
+              <code class="bg-black/40 px-1 py-0.5 text-[11px] text-emerald-300">set_limit</code>
+              instead of reopening a socket when you need additional history.
+            </span>
+          </li>
+          <li class="flex items-start gap-3">
+            <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
+            <span>
+              Auto-reconnect with exponential backoff (<span
+                class="font-mono text-[11px] text-white/70"
+                >useKlinesWebSocket.ts</span
+              >).
+            </span>
+          </li>
+          <li class="flex items-start gap-3">
+            <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
+            <span>Surface WebSocket status to users (badge, banner, toast, etc.).</span>
+          </li>
+        </ul>
       </section>
     </div>
 
@@ -2919,6 +2970,62 @@ const integrationUsage = computed<WebsocketUsageEntry[]>(() => [
     description: 'Refreshes comparison charts without additional REST polling.',
     components: [{ label: 'pages/compare.vue', path: 'app/pages/compare.vue' }],
   },
+  {
+    feature: 'Markets Pro table',
+    serviceId: 'binance-mini-ticker',
+    description: 'Combines Binance mini ticker stream and futures REST data for pro listings.',
+    components: [
+      { label: 'MarketTablePro.vue', path: 'app/components/Market/MarketTablePro.vue' },
+      { label: 'useBinanceMarket.ts', path: 'app/composables/useBinanceMarket.ts' },
+    ],
+  },
+  {
+    feature: 'Futures watchlist hydration',
+    serviceId: 'binance-kline-direct',
+    description: 'Backfills derivatives sparklines via Binance futures endpoints.',
+    components: [
+      { label: 'useFuturesUniverse.ts', path: 'app/composables/useFuturesUniverse.ts' },
+      { label: 'MarketTablePro.vue', path: 'app/components/Market/MarketTablePro.vue' },
+    ],
+  },
+  {
+    feature: 'Admin News QA',
+    serviceId: 'admin-news',
+    description: 'Internal news proxy combined with Reddit feed for newsroom validation.',
+    components: [
+      { label: 'admin.vue (News tab)', path: 'app/pages/admin.vue#news' },
+      { label: 'useArticles.ts', path: 'app/composables/useArticles.ts' },
+      { label: 'useRedditPublic.ts', path: 'app/composables/useRedditPublic.ts' },
+    ],
+  },
+  {
+    feature: 'Alerts control center',
+    serviceId: 'alerts-ws',
+    description: 'Live triggered alerts coupled with admin CRUD controls.',
+    components: [
+      { label: 'admin.vue (Alerts tab)', path: 'app/pages/admin.vue#alerts' },
+      { label: 'useNotifications.ts', path: 'app/composables/useNotifications.ts' },
+      { label: 'usePriceAlerts.ts', path: 'app/composables/usePriceAlerts.ts' },
+    ],
+  },
+  {
+    feature: 'Portfolio valuations',
+    serviceId: 'portfolio-rest',
+    description: 'Admin portfolio APIs to refresh balances and valuations.',
+    components: [
+      { label: 'admin.vue (Portfolios tab)', path: 'app/pages/admin.vue#portfolios' },
+      { label: 'usePortfolio.ts', path: 'app/composables/usePortfolio.ts' },
+    ],
+  },
+  {
+    feature: 'Favorites sync',
+    serviceId: 'favorites-rest',
+    description: 'Persists crypto & news favorites through the internal favorites endpoints.',
+    components: [
+      { label: 'admin.vue (Favorites tab)', path: 'app/pages/admin.vue#favorites' },
+      { label: 'useWatchlist.ts', path: 'app/composables/useWatchlist.ts' },
+    ],
+  },
 ])
 
 const totalRealtimeEndpoints = computed(
@@ -2983,36 +3090,108 @@ const binanceHttpEndpoints = computed(() => [
     method: 'GET',
     url: 'https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT',
     usage: 'Market tables, highlights, portfolio valuations',
+    sampleRequest: 'GET https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        symbol: 'BTCUSDT',
+        priceChange: '125.43000000',
+        priceChangePercent: '0.18',
+        lastPrice: '70895.12000000',
+        volume: '35241.57212000',
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Exchange info (spot)',
     method: 'GET',
     url: 'https://api.binance.com/api/v3/exchangeInfo',
     usage: 'Symbols metadata & filters',
+    sampleRequest: 'GET https://api.binance.com/api/v3/exchangeInfo?symbol=BTCUSDT',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        symbols: [
+          {
+            symbol: 'BTCUSDT',
+            status: 'TRADING',
+            baseAsset: 'BTC',
+            quoteAsset: 'USDT',
+          },
+        ],
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Compare page historical klines',
     method: 'GET',
     url: 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=500',
     usage: 'Initial chart load before live sync',
+    sampleRequest: 'GET https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=500',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      [[1719990000000, '70780.12', '70912.45', '70690.11', '70850.32', '321.45']],
+      null,
+      2,
+    ),
   },
   {
     name: 'Futures 24h ticker',
     method: 'GET',
     url: 'https://fapi.binance.com/fapi/v1/ticker/24hr?symbol={symbol}',
     usage: 'Perpetual futures metrics used by pro market tables',
+    sampleRequest: 'GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        symbol: 'BTCUSDT',
+        priceChange: '210.42000000',
+        lastPrice: '70880.24000000',
+        volume: '152412.21450000',
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Futures continuous klines',
     method: 'GET',
     url: 'https://fapi.binance.com/fapi/v1/continuousKlines?pair={pair}&contractType=PERPETUAL&interval=1h&limit=168',
     usage: 'Derivatives sparkline hydration for futures dashboards',
+    sampleRequest:
+      'GET https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT&contractType=PERPETUAL&interval=1h&limit=168',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      [[1719990000000, '70750.12', '70920.00', '70680.00', '70810.53', '412.12']],
+      null,
+      2,
+    ),
   },
   {
     name: 'Futures exchange info',
     method: 'GET',
     url: 'https://fapi.binance.com/fapi/v1/exchangeInfo',
     usage: 'Universe metadata for futures watchlists and filters',
+    sampleRequest: 'GET https://fapi.binance.com/fapi/v1/exchangeInfo?symbol=BTCUSDT',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        symbols: [
+          {
+            symbol: 'BTCUSDT',
+            contractType: 'PERPETUAL',
+            pricePrecision: 2,
+            quantityPrecision: 3,
+          },
+        ],
+      },
+      null,
+      2,
+    ),
   },
 ])
 
@@ -3066,121 +3245,273 @@ const serverHttpEndpoints = computed(() => [
     method: 'GET/POST',
     url: '/api/admin/users',
     usage: 'List and create users from the admin dashboard',
+    sampleRequest: 'GET /api/admin/users',
+    samplePayload: JSON.stringify(
+      {
+        name: 'Alice Doe',
+        email: 'alice@example.com',
+        role: 'admin',
+      },
+      null,
+      2,
+    ),
+    sampleResponse: JSON.stringify(
+      {
+        users: [
+          {
+            id: 'usr_123',
+            email: 'alice@example.com',
+            role: 'admin',
+          },
+        ],
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin user detail',
     method: 'PUT/DELETE',
     url: '/api/admin/users/{id}',
     usage: 'Update or remove existing users',
+    sampleRequest: 'PUT /api/admin/users/usr_123/role',
+    samplePayload: JSON.stringify(
+      {
+        role: 'user',
+      },
+      null,
+      2,
+    ),
+    sampleResponse: JSON.stringify(
+      {
+        id: 'usr_123',
+        role: 'user',
+        updatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin user role toggle',
     method: 'PUT',
     url: '/api/admin/users/{id}/role',
     usage: 'Promote or demote an account to admin',
+    sampleRequest: 'PUT /api/admin/users/usr_123/role',
+    samplePayload: JSON.stringify(
+      {
+        role: 'admin',
+      },
+      null,
+      2,
+    ),
+    sampleResponse: JSON.stringify(
+      {
+        id: 'usr_123',
+        role: 'admin',
+        updatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin alerts API',
     method: 'GET',
     url: '/api/admin/alerts',
     usage: 'Overview of all configured alerts',
+    sampleRequest: 'GET /api/admin/alerts',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        alerts: [
+          {
+            id: 'alert_42',
+            symbol: 'ETHUSDT',
+            type: 'above',
+            targetPrice: 4100,
+          },
+        ],
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin alert detail',
     method: 'PUT/DELETE',
     url: '/api/admin/alerts/{id}',
     usage: 'Edit or archive a specific alert from back-office',
+    sampleRequest: 'PUT /api/admin/alerts/alert_42',
+    samplePayload: JSON.stringify(
+      {
+        isActive: false,
+      },
+      null,
+      2,
+    ),
+    sampleResponse: JSON.stringify(
+      {
+        id: 'alert_42',
+        isActive: false,
+        updatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin portfolios API',
     method: 'GET',
     url: '/api/admin/portfolios',
     usage: 'Retrieve customer portfolios for auditing',
+    sampleRequest: 'GET /api/admin/portfolios',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        portfolios: [
+          {
+            userId: 'usr_789',
+            positions: [{ symbol: 'BTC', quantity: 0.42 }],
+          },
+        ],
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin transaction update',
     method: 'PUT',
     url: '/api/admin/portfolios/transactions/{id}',
     usage: 'Edit a single portfolio transaction entry',
+    sampleRequest: 'PUT /api/admin/portfolios/transactions/txn_101',
+    samplePayload: JSON.stringify(
+      {
+        price: 70500,
+        notes: 'Fee waived',
+      },
+      null,
+      2,
+    ),
+    sampleResponse: JSON.stringify(
+      {
+        id: 'txn_101',
+        price: 70500,
+        updatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin favorites API',
     method: 'GET',
     url: '/api/admin/favorites',
     usage: 'Inspect stored favorite assets and news',
+    sampleRequest: 'GET /api/admin/favorites',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        favorites: [
+          {
+            userId: 'usr_321',
+            crypto: ['BTCUSDT', 'ETHUSDT'],
+            news: [42, 51],
+          },
+        ],
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin news proxy',
     method: 'GET',
     url: '/api/admin/news?per_page=50',
     usage: 'Back-office news QA & Integrations tab snapshot',
+    sampleRequest: 'GET /api/admin/news?per_page=25&search=ETF',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        articles: [
+          {
+            id: 101,
+            title: 'Bitcoin ETF inflows hit new high',
+            publish_date: new Date().toISOString(),
+          },
+        ],
+        total: 204,
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Admin klines proxy',
     method: 'GET',
     url: '/api/admin/klines?symbol=BTCUSDT&interval=1h',
     usage: 'Internal QA for Binance WebSocket payloads',
+    sampleRequest: 'GET /api/admin/klines?symbol=ETHUSDT&interval=15m&limit=120',
+    samplePayload: undefined,
+    sampleResponse: JSON.stringify(
+      {
+        symbol: 'ETHUSDT',
+        interval: '15m',
+        klines: [[1719990000000, 3600.12, 3620.45, 3588.11, 3612.27, 258.43]],
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Price alerts API',
     method: 'POST/PUT/DELETE',
     url: '/api/alerts',
     usage: 'Create, toggle, reset alerts from UI and integrations',
+    sampleRequest: 'POST /api/alerts',
+    samplePayload: JSON.stringify(
+      {
+        symbol: 'BTCUSDT',
+        type: 'above',
+        targetPrice: 71500,
+      },
+      null,
+      2,
+    ),
+    sampleResponse: JSON.stringify(
+      {
+        id: 'alert_200',
+        symbol: 'BTCUSDT',
+        type: 'above',
+        targetPrice: 71500,
+        status: 'created',
+      },
+      null,
+      2,
+    ),
   },
   {
     name: 'Favorites persistence',
     method: 'GET/POST',
     url: '/api/favorites',
     usage: 'Store user favorites (cryptos & news)',
-  },
-  {
-    name: 'Reddit sentiment proxy',
-    method: 'GET',
-    url: '/api/reddit?subreddit=CryptoCurrency&sort=hot&limit=50',
-    usage: 'Community threads powering social sentiment widgets',
-    providerLabel: 'Community · Reddit',
-  },
-  {
-    name: 'Klines OHLC API',
-    method: 'GET',
-    url: 'http://127.0.0.1:8004/api/v1/klines/{symbol}/{interval}/ohlcv',
-    usage: 'Historical OHLC data served by the CryptoBiz backend',
-  },
-  {
-    name: 'Klines realtime polling',
-    method: 'GET',
-    url: 'http://127.0.0.1:8004/api/v1/klines/{symbol}/{interval}/realtime?limit={n}',
-    usage: 'Polling fallback for charts when websockets are unavailable',
-  },
-  {
-    name: 'Articles feed',
-    method: 'GET',
-    url: 'http://127.0.0.1:8004/api/v1/articles',
-    usage: 'News ingestion pipeline consumed by the admin news tab',
-  },
-  {
-    name: 'Articles categories',
-    method: 'GET',
-    url: 'http://127.0.0.1:8004/api/v1/articles/categories',
-    usage: 'Available taxonomy filters for newsroom tooling',
-  },
-  {
-    name: 'Articles sources',
-    method: 'GET',
-    url: 'http://127.0.0.1:8004/api/v1/articles/sources',
-    usage: 'Source list powering filtering and analytics',
-  },
-  {
-    name: 'Articles stats',
-    method: 'GET',
-    url: 'http://127.0.0.1:8004/api/v1/articles/stats',
-    usage: 'Summary metrics on the latest article ingestion batch',
-  },
-  {
-    name: 'Article detail',
-    method: 'GET',
-    url: 'http://127.0.0.1:8004/api/v1/articles/{id}',
-    usage: 'Single-article insight for manual QA in admin news view',
+    sampleRequest: 'POST /api/favorites',
+    samplePayload: JSON.stringify(
+      {
+        crypto: 'BTCUSDT',
+      },
+      null,
+      2,
+    ),
+    sampleResponse: JSON.stringify(
+      {
+        crypto: ['BTCUSDT', 'ETHUSDT'],
+        news: [101, 202],
+      },
+      null,
+      2,
+    ),
   },
 ])
 
