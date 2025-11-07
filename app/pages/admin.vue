@@ -2996,6 +2996,24 @@ const binanceHttpEndpoints = computed(() => [
     url: 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=500',
     usage: 'Initial chart load before live sync',
   },
+  {
+    name: 'Futures 24h ticker',
+    method: 'GET',
+    url: 'https://fapi.binance.com/fapi/v1/ticker/24hr?symbol={symbol}',
+    usage: 'Perpetual futures metrics used by pro market tables',
+  },
+  {
+    name: 'Futures continuous klines',
+    method: 'GET',
+    url: 'https://fapi.binance.com/fapi/v1/continuousKlines?pair={pair}&contractType=PERPETUAL&interval=1h&limit=168',
+    usage: 'Derivatives sparkline hydration for futures dashboards',
+  },
+  {
+    name: 'Futures exchange info',
+    method: 'GET',
+    url: 'https://fapi.binance.com/fapi/v1/exchangeInfo',
+    usage: 'Universe metadata for futures watchlists and filters',
+  },
 ])
 
 const serverRealtimeServices = computed<WebsocketServiceInfo[]>(() => [
@@ -3044,6 +3062,54 @@ const serverRealtimeServices = computed<WebsocketServiceInfo[]>(() => [
 
 const serverHttpEndpoints = computed(() => [
   {
+    name: 'Admin users API',
+    method: 'GET/POST',
+    url: '/api/admin/users',
+    usage: 'List and create users from the admin dashboard',
+  },
+  {
+    name: 'Admin user detail',
+    method: 'PUT/DELETE',
+    url: '/api/admin/users/{id}',
+    usage: 'Update or remove existing users',
+  },
+  {
+    name: 'Admin user role toggle',
+    method: 'PUT',
+    url: '/api/admin/users/{id}/role',
+    usage: 'Promote or demote an account to admin',
+  },
+  {
+    name: 'Admin alerts API',
+    method: 'GET',
+    url: '/api/admin/alerts',
+    usage: 'Overview of all configured alerts',
+  },
+  {
+    name: 'Admin alert detail',
+    method: 'PUT/DELETE',
+    url: '/api/admin/alerts/{id}',
+    usage: 'Edit or archive a specific alert from back-office',
+  },
+  {
+    name: 'Admin portfolios API',
+    method: 'GET',
+    url: '/api/admin/portfolios',
+    usage: 'Retrieve customer portfolios for auditing',
+  },
+  {
+    name: 'Admin transaction update',
+    method: 'PUT',
+    url: '/api/admin/portfolios/transactions/{id}',
+    usage: 'Edit a single portfolio transaction entry',
+  },
+  {
+    name: 'Admin favorites API',
+    method: 'GET',
+    url: '/api/admin/favorites',
+    usage: 'Inspect stored favorite assets and news',
+  },
+  {
     name: 'Admin news proxy',
     method: 'GET',
     url: '/api/admin/news?per_page=50',
@@ -3052,7 +3118,7 @@ const serverHttpEndpoints = computed(() => [
   {
     name: 'Admin klines proxy',
     method: 'GET',
-    url: '/api/admin/klines/BTCUSDT/1h',
+    url: '/api/admin/klines?symbol=BTCUSDT&interval=1h',
     usage: 'Internal QA for Binance WebSocket payloads',
   },
   {
@@ -3066,6 +3132,55 @@ const serverHttpEndpoints = computed(() => [
     method: 'GET/POST',
     url: '/api/favorites',
     usage: 'Store user favorites (cryptos & news)',
+  },
+  {
+    name: 'Reddit sentiment proxy',
+    method: 'GET',
+    url: '/api/reddit?subreddit=CryptoCurrency&sort=hot&limit=50',
+    usage: 'Community threads powering social sentiment widgets',
+    providerLabel: 'Community · Reddit',
+  },
+  {
+    name: 'Klines OHLC API',
+    method: 'GET',
+    url: 'http://127.0.0.1:8004/api/v1/klines/{symbol}/{interval}/ohlcv',
+    usage: 'Historical OHLC data served by the CryptoBiz backend',
+  },
+  {
+    name: 'Klines realtime polling',
+    method: 'GET',
+    url: 'http://127.0.0.1:8004/api/v1/klines/{symbol}/{interval}/realtime?limit={n}',
+    usage: 'Polling fallback for charts when websockets are unavailable',
+  },
+  {
+    name: 'Articles feed',
+    method: 'GET',
+    url: 'http://127.0.0.1:8004/api/v1/articles',
+    usage: 'News ingestion pipeline consumed by the admin news tab',
+  },
+  {
+    name: 'Articles categories',
+    method: 'GET',
+    url: 'http://127.0.0.1:8004/api/v1/articles/categories',
+    usage: 'Available taxonomy filters for newsroom tooling',
+  },
+  {
+    name: 'Articles sources',
+    method: 'GET',
+    url: 'http://127.0.0.1:8004/api/v1/articles/sources',
+    usage: 'Source list powering filtering and analytics',
+  },
+  {
+    name: 'Articles stats',
+    method: 'GET',
+    url: 'http://127.0.0.1:8004/api/v1/articles/stats',
+    usage: 'Summary metrics on the latest article ingestion batch',
+  },
+  {
+    name: 'Article detail',
+    method: 'GET',
+    url: 'http://127.0.0.1:8004/api/v1/articles/{id}',
+    usage: 'Single-article insight for manual QA in admin news view',
   },
 ])
 
@@ -3083,11 +3198,11 @@ const realtimeServices = computed(() => [
 const httpEndpoints = computed(() => [
   ...binanceHttpEndpoints.value.map((endpoint) => ({
     ...endpoint,
-    providerLabel: 'Binance · External',
+    providerLabel: endpoint.providerLabel ?? 'Binance · External',
   })),
   ...serverHttpEndpoints.value.map((endpoint) => ({
     ...endpoint,
-    providerLabel: 'CryptoBiz · Internal',
+    providerLabel: endpoint.providerLabel ?? 'CryptoBiz · Internal',
   })),
 ])
 </script>
