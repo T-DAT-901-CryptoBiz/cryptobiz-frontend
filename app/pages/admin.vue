@@ -1709,7 +1709,10 @@
         </div>
       </div>
 
-      <div v-if="copyFeedback" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+      <div
+        v-if="copyFeedback"
+        class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200"
+      >
         {{ copyFeedback }}
       </div>
 
@@ -1741,13 +1744,19 @@
       </div>
 
       <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <section class="space-y-5 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur">
+        <section
+          class="space-y-5 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+        >
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-lg font-semibold text-white">WebSocket Streams</h3>
-              <p class="text-sm text-white/60">Aggregated status for every real-time channel we expose.</p>
+              <p class="text-sm text-white/60">
+                Aggregated status for every real-time channel we expose.
+              </p>
             </div>
-            <span class="text-xs text-white/40">{{ totalRealtimeEndpoints }} streams monitored</span>
+            <span class="text-xs text-white/40"
+              >{{ totalRealtimeEndpoints }} streams monitored</span
+            >
           </div>
 
           <div class="space-y-4">
@@ -1784,14 +1793,19 @@
 
               <p class="mt-3 text-sm text-white/70">{{ service.description }}</p>
 
-              <div class="mt-3 flex flex-col gap-2 text-xs text-white/60 sm:flex-row sm:items-center">
-                <code class="flex-1 truncate rounded-lg bg-black/50 px-2 py-1 font-mono text-[11px] text-emerald-200/80">
+              <div
+                class="mt-3 flex flex-col gap-2 text-xs text-white/60 sm:flex-row sm:items-center"
+              >
+                <code
+                  class="flex-1 truncate rounded-lg bg-black/50 px-2 py-1 font-mono text-[11px] text-emerald-200/80"
+                >
                   {{ service.endpoint }}
                 </code>
                 <button
                   class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-white/70 transition hover:border-emerald-400/40 hover:text-emerald-200"
                   type="button"
-                  @click="copyToClipboard(service.endpoint)">
+                  @click="copyToClipboard(service.endpoint)"
+                >
                   <Icon name="lucide:clipboard-copy" class="h-3.5 w-3.5" />
                   Copy
                 </button>
@@ -1836,7 +1850,9 @@
               </div>
 
               <details class="mt-4 rounded-xl border border-white/5 bg-black/30 p-3">
-                <summary class="flex cursor-pointer items-center justify-between text-xs text-white/60">
+                <summary
+                  class="flex cursor-pointer items-center justify-between text-xs text-white/60"
+                >
                   Payloads & samples
                   <Icon name="lucide:chevron-down" class="h-4 w-4 text-white/40" />
                 </summary>
@@ -1848,14 +1864,16 @@
                   >
                     <div class="text-sm font-medium text-white">{{ action.name }}</div>
                     <p class="mt-1 text-xs text-white/50">{{ action.description }}</p>
-                    <pre class="mt-2 overflow-x-auto rounded bg-black/70 p-2 text-[11px] text-emerald-300">
-{{ action.payload }}
+                    <pre
+                      class="mt-2 overflow-x-auto rounded bg-black/70 p-2 text-[11px] text-emerald-300"
+                      >{{ action.payload }}
                     </pre>
                   </div>
                   <div>
                     <p class="text-sm font-medium text-white">{{ service.sampleEventTitle }}</p>
-                    <pre class="mt-2 overflow-x-auto rounded bg-black/70 p-3 text-[11px] text-emerald-300">
-{{ service.sampleEventPayload }}
+                    <pre
+                      class="mt-2 overflow-x-auto rounded bg-black/70 p-3 text-[11px] text-emerald-300"
+                      >{{ service.sampleEventPayload }}
                     </pre>
                   </div>
                   <p v-if="service.notes" class="text-xs text-white/50">{{ service.notes }}</p>
@@ -1865,11 +1883,15 @@
           </div>
         </section>
 
-        <section class="space-y-5 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur">
+        <section
+          class="space-y-5 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+        >
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-lg font-semibold text-white">Key REST APIs</h3>
-              <p class="text-sm text-white/60">Concise reference of the endpoints hit by the app.</p>
+              <p class="text-sm text-white/60">
+                Concise reference of the endpoints hit by the app.
+              </p>
             </div>
             <span class="text-xs text-white/40">{{ totalHttpEndpoints }} endpoints</span>
           </div>
@@ -1880,11 +1902,15 @@
               :key="`${endpoint.providerLabel}-${endpoint.url}`"
               class="rounded-2xl border border-white/5 bg-black/30 p-4"
             >
-              <div class="flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-wide text-white/40">
+              <div
+                class="flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-wide text-white/40"
+              >
                 <span class="font-semibold text-white/70">{{ endpoint.method }}</span>
                 <span class="text-white/50">{{ endpoint.providerLabel }}</span>
               </div>
-              <code class="mt-2 block truncate rounded-lg bg-black/50 px-2 py-1 font-mono text-[11px] text-white/80">
+              <code
+                class="mt-2 block truncate rounded-lg bg-black/50 px-2 py-1 font-mono text-[11px] text-white/80"
+              >
                 {{ endpoint.url }}
               </code>
               <p class="mt-2 text-sm font-medium text-white">{{ endpoint.name }}</p>
@@ -1895,13 +1921,17 @@
       </div>
 
       <section class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div class="space-y-4 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur">
+        <div
+          class="space-y-4 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+        >
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-lg font-semibold text-white">Usage Map</h3>
               <p class="text-sm text-white/60">Which experiences depend on WebSocket data.</p>
             </div>
-            <span class="text-xs text-white/40">{{ totalRealtimeFeatures }} features · {{ totalServiceConsumers }} consumers</span>
+            <span class="text-xs text-white/40"
+              >{{ totalRealtimeFeatures }} features · {{ totalServiceConsumers }} consumers</span
+            >
           </div>
 
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -1920,7 +1950,11 @@
               <div class="mt-3 space-y-2">
                 <p class="text-[11px] uppercase tracking-wide text-white/40">Components</p>
                 <ul class="space-y-1 text-xs text-white/60">
-                  <li v-for="component in usage.components" :key="component.path" class="flex items-center gap-2">
+                  <li
+                    v-for="component in usage.components"
+                    :key="component.path"
+                    class="flex items-center gap-2"
+                  >
                     <Icon name="lucide:file-code" class="h-3.5 w-3.5 text-white/40" />
                     <span class="font-mono text-[11px] text-white/70">{{ component.path }}</span>
                   </li>
@@ -1930,7 +1964,9 @@
           </div>
         </div>
 
-        <div class="space-y-4 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur">
+        <div
+          class="space-y-4 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+        >
           <h3 class="text-lg font-semibold text-white">Integration Checklist</h3>
           <ul class="space-y-3 text-sm text-white/70">
             <li class="flex items-start gap-3">
@@ -1952,8 +1988,10 @@
             <li class="flex items-start gap-3">
               <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
               <span>
-                Auto-reconnect with exponential backoff
-                (<span class="font-mono text-[11px] text-white/70">useKlinesWebSocket.ts</span>).
+                Auto-reconnect with exponential backoff (<span
+                  class="font-mono text-[11px] text-white/70"
+                  >useKlinesWebSocket.ts</span
+                >).
               </span>
             </li>
             <li class="flex items-start gap-3">
@@ -1963,7 +2001,6 @@
           </ul>
         </div>
       </section>
-
     </div>
 
     <div v-if="activeTab === 'news'" class="space-y-6">
@@ -2767,7 +2804,11 @@ const binanceRealtimeServices = computed<WebsocketServiceInfo[]>(() => {
         {
           name: 'subscribe',
           description: 'Connect to `{symbol}@kline_{interval}`.',
-          payload: JSON.stringify({ action: 'connect', stream: '{symbol}@kline_{interval}' }, null, 2),
+          payload: JSON.stringify(
+            { action: 'connect', stream: '{symbol}@kline_{interval}' },
+            null,
+            2,
+          ),
         },
         {
           name: 'close',
@@ -2892,39 +2933,6 @@ const totalServiceConsumers = computed(
     serverRealtimeServices.value.reduce((acc, service) => acc + service.consumers.length, 0),
 )
 const totalRealtimeFeatures = computed(() => integrationUsage.value.length)
-
-const newsApiSummary = computed(() => {
-  const articles = newsData.value?.articles ?? []
-  const total = newsData.value?.total ?? articles.length
-
-  const recentArticles = articles.slice(0, 25)
-  const categories = new Set<string>()
-  const sources = new Set<string>()
-  const tickers = new Set<string>()
-
-  for (const article of recentArticles) {
-    if (article.category) categories.add(article.category)
-    if (article.rss_source) sources.add(article.rss_source)
-    if (Array.isArray(article.tickers)) {
-      article.tickers.filter(Boolean).forEach((ticker) => tickers.add(ticker))
-    }
-  }
-
-  const lastArticle = articles[0]
-  const lastPublishedDate = lastArticle ? new Date(lastArticle.publish_date) : null
-
-  return {
-    endpoint: '/api/admin/news',
-    total,
-    lastPublishedDate,
-    lastPublishedRelative: lastArticle
-      ? formatRelativeTime(lastArticle.publish_date)
-      : 'No data yet',
-    topSources: Array.from(sources).slice(0, 3),
-    topCategories: Array.from(categories).slice(0, 4),
-    topTickers: Array.from(tickers).slice(0, 5),
-  }
-})
 
 const copyFeedback = ref('')
 let copyTimeout: ReturnType<typeof setTimeout> | null = null
