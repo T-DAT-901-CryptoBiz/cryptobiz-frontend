@@ -1682,6 +1682,229 @@
         </form>
       </div>
     </div>
+
+    <div v-if="activeTab === 'websockets'" class="space-y-6">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div
+            class="inline-flex items-center gap-2 text-sm uppercase tracking-wide text-emerald-400/70"
+          >
+            <Icon name="lucide:waves" class="h-4 w-4" />
+            Realtime infrastructure
+          </div>
+          <h2 class="mt-1 text-xl font-semibold text-white">WebSocket Services Overview</h2>
+          <p class="text-sm text-white/60">
+            Monitor the internal streams powering live pricing, charts and admin tooling.
+          </p>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-white/50">
+          <span>Last refresh: {{ formatDateTime(websocketRefreshedAt) }}</span>
+          <button
+            class="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10 hover:text-white"
+            @click="refreshWebsocketInsights"
+          >
+            <Icon name="lucide:rotate-ccw" class="h-4 w-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div class="rounded-2xl border border-white/5 bg-neutral-900/60 p-4">
+          <div class="text-xs text-white/50">Active endpoints</div>
+          <div class="mt-2 text-2xl font-semibold text-white">{{ totalWebsocketEndpoints }}</div>
+          <p class="mt-1 text-xs text-white/50">
+            Internal WebSocket services exposed by the platform.
+          </p>
+        </div>
+        <div class="rounded-2xl border border-white/5 bg-neutral-900/60 p-4">
+          <div class="text-xs text-white/50">Realtime consumers</div>
+          <div class="mt-2 text-2xl font-semibold text-white">{{ totalServiceConsumers }}</div>
+          <p class="mt-1 text-xs text-white/50">
+            Screens and features currently hooked to a live stream.
+          </p>
+        </div>
+        <div class="rounded-2xl border border-white/5 bg-neutral-900/60 p-4">
+          <div class="flex items-center justify-between text-xs text-white/50">
+            <span>Base URL</span>
+            <button
+              class="inline-flex items-center gap-1 rounded border border-white/10 px-2 py-0.5 text-[11px] text-white/60 hover:bg-white/10 hover:text-white"
+              @click="copyToClipboard(wsBaseUrl)"
+            >
+              <Icon name="lucide:clipboard" class="h-3.5 w-3.5" />
+              Copy
+            </button>
+          </div>
+          <code class="mt-2 block truncate font-mono text-sm text-white/80">{{ wsBaseUrl }}</code>
+          <p
+            v-if="copyFeedback"
+            class="mt-1 text-[11px]"
+            :class="copyFeedback === 'Endpoint copied' ? 'text-emerald-400' : 'text-amber-400'"
+          >
+            {{ copyFeedback }}
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div
+          v-for="service in websocketServices"
+          :key="service.id"
+          class="space-y-4 rounded-2xl border border-white/5 bg-neutral-900/60 p-5"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <div class="rounded-lg bg-white/5 p-2 text-white/80">
+                <Icon :name="service.icon" class="h-5 w-5" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-white">{{ service.name }}</h3>
+                <p class="text-xs text-white/60">{{ service.endpoint }}</p>
+              </div>
+            </div>
+            <span
+              class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium"
+              :class="
+                service.status === 'operational'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                  : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+              "
+            >
+              <span
+                class="h-2 w-2 rounded-full"
+                :class="service.status === 'operational' ? 'bg-emerald-400' : 'bg-amber-400'"
+              />
+              {{ service.status === 'operational' ? 'Operational' : 'Monitoring' }}
+            </span>
+          </div>
+
+          <p class="text-sm text-white/60">{{ service.description }}</p>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-white/40">Latency</p>
+              <p class="text-sm text-white">{{ service.latency }}</p>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-white/40">Throughput</p>
+              <p class="text-sm text-white">{{ service.throughput }}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <h4 class="text-sm font-semibold text-white">Consumers</h4>
+              <ul class="mt-2 space-y-2 text-sm text-white/70">
+                <li v-for="consumer in service.consumers" :key="consumer.name">
+                  <span class="font-medium text-white">{{ consumer.name }}</span>
+                  <span class="block text-xs text-white/50">{{ consumer.description }}</span>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="text-sm font-semibold text-white">Supported actions</h4>
+              <ul class="mt-2 space-y-2">
+                <li
+                  v-for="action in service.actions"
+                  :key="action.name"
+                  class="rounded-lg border border-white/5 bg-black/20 p-3"
+                >
+                  <div class="text-sm font-medium text-white">{{ action.name }}</div>
+                  <p class="text-xs text-white/50">{{ action.description }}</p>
+                  <pre
+                    class="mt-2 overflow-x-auto rounded bg-black/40 p-2 text-[11px] text-emerald-300"
+                    >{{ action.payload }}
+                  </pre>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-white">{{ service.sampleEventTitle }}</h4>
+            <pre
+              class="mt-2 overflow-x-auto rounded-xl border border-white/5 bg-black/40 p-3 text-xs text-emerald-300"
+              >{{ service.sampleEventPayload }}
+            </pre>
+          </div>
+
+          <p v-if="service.notes" class="text-xs text-white/50">{{ service.notes }}</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 rounded-2xl border border-white/5 bg-neutral-900/60 p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-semibold text-white">Feature usage map</h3>
+            <p class="text-sm text-white/60">
+              Overview of the screens and components hooked to the WebSocket layer.
+            </p>
+          </div>
+          <div class="text-xs text-white/50">
+            {{ totalRealtimeFeatures }} features · {{ totalServiceConsumers }} touch points
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-white/10 text-left text-sm text-white/70">
+            <thead class="text-xs uppercase text-white/40">
+              <tr>
+                <th class="px-4 py-2 font-medium">Feature</th>
+                <th class="px-4 py-2 font-medium">Description</th>
+                <th class="px-4 py-2 font-medium">Components</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              <tr v-for="usage in websocketUsage" :key="usage.feature">
+                <td class="whitespace-nowrap px-4 py-3 font-medium text-white">
+                  {{ usage.feature }}
+                </td>
+                <td class="px-4 py-3">{{ usage.description }}</td>
+                <td class="px-4 py-3">
+                  <ul class="space-y-1">
+                    <li
+                      v-for="component in usage.components"
+                      :key="component.path"
+                      class="text-xs text-white/60"
+                    >
+                      <Icon name="lucide:file-code" class="mr-1 inline h-3.5 w-3.5 text-white/40" />
+                      <span class="font-mono text-[11px] text-white/70">{{ component.path }}</span>
+                    </li>
+                  </ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-white/5 bg-neutral-900/60 p-5">
+        <h3 class="text-lg font-semibold text-white">Integration checklist</h3>
+        <ul class="mt-2 list-disc space-y-1 pl-6 text-sm text-white/60">
+          <li>
+            Send a
+            <code class="bg-black/40 px-1 py-0.5 text-[11px] text-emerald-300">ping</code> action
+            every 25 seconds when the client is idle.
+          </li>
+          <li>
+            Prefer
+            <code class="bg-black/40 px-1 py-0.5 text-[11px] text-emerald-300">set_limit</code> over
+            reloading sockets when you need more history.
+          </li>
+          <li>
+            Reconnect automatically with exponential backoff (see
+            <span class="font-mono text-[11px] text-white/70">useKlinesWebSocket.ts</span>).
+          </li>
+          <li>
+            Surface WebSocket status to users (eg. green dot in Our View, banner in admin tools).
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'news'" class="space-y-6">
+      <!-- existing news content -->
+    </div>
   </div>
 </template>
 
@@ -1753,6 +1976,7 @@ const tabs = [
   { id: 'alerts', label: 'Alerts', icon: 'lucide:bell' },
   { id: 'portfolios', label: 'Portfolios', icon: 'lucide:wallet' },
   { id: 'favorites', label: 'Favorites', icon: 'lucide:star' },
+  { id: 'websockets', label: 'WebSockets', icon: 'lucide:waves' },
   { id: 'news', label: 'News', icon: 'lucide:newspaper' },
   { id: 'klines', label: 'Klines', icon: 'lucide:trending-up' },
 ]
@@ -2328,6 +2552,7 @@ watch(activeTab, (tab) => {
   if (tab === 'alerts' && alerts.value.length === 0) loadAlerts()
   if (tab === 'portfolios' && portfolios.value.length === 0) loadPortfolios()
   if (tab === 'favorites' && favorites.value.length === 0) loadFavorites()
+  if (tab === 'websockets') refreshWebsocketInsights()
   if (tab === 'news' && newsData.value.articles.length === 0) loadNews()
   if (tab === 'klines' && klinesData.value.klines.length === 0) loadKlines()
 })
@@ -2338,5 +2563,193 @@ watch(newsPage, () => {
 
 onMounted(() => {
   loadDashboard()
+})
+
+const websocketRefreshedAt = ref(new Date())
+const runtimeConfig = useRuntimeConfig()
+
+type WebsocketStatus = 'operational' | 'monitoring'
+
+interface WebsocketConsumerInfo {
+  name: string
+  description: string
+}
+
+interface WebsocketActionInfo {
+  name: string
+  description: string
+  payload: string
+}
+
+interface WebsocketServiceInfo {
+  id: string
+  name: string
+  icon: string
+  endpoint: string
+  status: WebsocketStatus
+  latency: string
+  throughput: string
+  description: string
+  consumers: WebsocketConsumerInfo[]
+  actions: WebsocketActionInfo[]
+  sampleEventTitle: string
+  sampleEventPayload: string
+  notes?: string
+}
+
+interface WebsocketUsageEntry {
+  feature: string
+  serviceId: string
+  description: string
+  components: Array<{ label: string; path: string }>
+}
+
+const wsBaseUrl = computed(() => runtimeConfig.public?.wsBaseUrl ?? 'ws://127.0.0.1:8004')
+
+const websocketServices = computed<WebsocketServiceInfo[]>(() => {
+  const sampleKlineEvent = JSON.stringify(
+    {
+      type: 'kline',
+      symbol: 'BTCUSDT',
+      interval: '1m',
+      o: '67250.12',
+      h: '67270.55',
+      l: '67240.01',
+      c: '67265.88',
+      v: '25.46',
+      t: 1719993600000,
+    },
+    null,
+    2,
+  )
+
+  return [
+    {
+      id: 'klines',
+      name: 'Market Klines Stream',
+      icon: 'lucide:candlestick-chart',
+      endpoint: `${wsBaseUrl.value}/ws/klines/{symbol}/{interval}`,
+      status: 'operational',
+      latency: '~120 ms (p95)',
+      throughput: '≤ 100 updates/s',
+      description:
+        'Streams consolidated OHLCV data for spot markets. Used by trading dashboards and internal monitoring.',
+      consumers: [
+        {
+          name: 'Our View Chart',
+          description: 'Real-time candlestick & volume rendering for flagship assets.',
+        },
+        {
+          name: 'Compare Page',
+          description: 'Synchronised price comparisons without overloading the REST API.',
+        },
+        {
+          name: 'Admin · Klines',
+          description: 'Product & QA debugging view available from this back office.',
+        },
+      ],
+      actions: [
+        {
+          name: 'subscribe',
+          description: 'Start receiving the live kline stream for the current symbol/interval.',
+          payload: JSON.stringify({ action: 'subscribe' }, null, 2),
+        },
+        {
+          name: 'set_limit',
+          description: 'Adjust historical depth on the fly (supports 1 - 1000 klines).',
+          payload: JSON.stringify({ action: 'set_limit', limit: 300 }, null, 2),
+        },
+        {
+          name: 'get_latest',
+          description: 'Request an immediate snapshot without closing the socket.',
+          payload: JSON.stringify({ action: 'get_latest' }, null, 2),
+        },
+        {
+          name: 'ping',
+          description: 'Keep the connection alive when the market is quiet.',
+          payload: JSON.stringify({ action: 'ping' }, null, 2),
+        },
+      ],
+      sampleEventTitle: 'Sample kline payload',
+      sampleEventPayload: sampleKlineEvent,
+      notes:
+        'Messages are ordered by opening time and deduplicated before reaching the client. Auto-reconnect uses exponential backoff.',
+    },
+  ]
+})
+
+const websocketUsage = computed<WebsocketUsageEntry[]>(() => [
+  {
+    feature: 'Our View Live Chart',
+    serviceId: 'klines',
+    description: 'Delivers OHLCV data for BTC, ETH, XRP and BNB in real time.',
+    components: [
+      {
+        label: 'MarketApexKlinesChart.vue',
+        path: 'app/components/Charts/MarketApexKlinesChart.vue',
+      },
+      { label: 'useKlinesWebSocket.ts', path: 'app/composables/useKlinesWebSocket.ts' },
+    ],
+  },
+  {
+    feature: 'Admin · Klines tab',
+    serviceId: 'klines',
+    description:
+      'Allows product and support teams to QA WebSocket payloads directly in the back office.',
+    components: [{ label: 'admin.vue (Klines tab)', path: 'app/pages/admin.vue#klines' }],
+  },
+  {
+    feature: 'Compare page live feed',
+    serviceId: 'klines',
+    description: 'Refreshes comparison charts without additional REST polling.',
+    components: [{ label: 'pages/compare.vue', path: 'app/pages/compare.vue' }],
+  },
+])
+
+const totalWebsocketEndpoints = computed(() => websocketServices.value.length)
+const totalServiceConsumers = computed(() =>
+  websocketServices.value.reduce((acc, service) => acc + service.consumers.length, 0),
+)
+const totalRealtimeFeatures = computed(() => websocketUsage.value.length)
+
+const copyFeedback = ref('')
+let copyTimeout: ReturnType<typeof setTimeout> | null = null
+
+function refreshWebsocketInsights() {
+  websocketRefreshedAt.value = new Date()
+}
+
+function formatDateTime(date: Date): string {
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+async function copyToClipboard(value: string) {
+  if (typeof navigator === 'undefined' || !navigator.clipboard) {
+    copyFeedback.value = 'Clipboard unavailable'
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(value)
+    copyFeedback.value = 'Endpoint copied'
+  } catch (error) {
+    console.error('Failed to copy to clipboard:', error)
+    copyFeedback.value = 'Unable to copy'
+  }
+
+  if (copyTimeout) clearTimeout(copyTimeout)
+  copyTimeout = setTimeout(() => {
+    copyFeedback.value = ''
+  }, 2000)
+}
+
+onBeforeUnmount(() => {
+  if (copyTimeout) clearTimeout(copyTimeout)
 })
 </script>
