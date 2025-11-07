@@ -1682,6 +1682,330 @@
         </form>
       </div>
     </div>
+
+    <div v-if="activeTab === 'integrations'" class="space-y-8">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div
+            class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-300/70"
+          >
+            <Icon name="lucide:network" class="h-4 w-4" />
+            Integrations & Streams
+          </div>
+          <h2 class="mt-2 text-2xl font-semibold text-white">Real-time Connectivity Overview</h2>
+          <p class="text-sm text-white/60">
+            Monitor the state of our WebSockets, REST APIs, and the product areas they power.
+          </p>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-white/50">
+          <span>Last update: {{ formatDateTime(integrationsRefreshedAt) }}</span>
+          <button
+            class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/70 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+            @click="refreshIntegrationInsights"
+          >
+            <Icon name="lucide:rotate-ccw" class="h-4 w-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="copyFeedback"
+        class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200"
+      >
+        {{ copyFeedback }}
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p class="text-xs uppercase tracking-wide text-white/40">Realtime streams</p>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl font-semibold text-white">{{ totalRealtimeEndpoints }}</span>
+            <span class="text-xs text-white/40">active sources</span>
+          </div>
+          <p class="mt-2 text-xs text-white/50">Binance feeds & CryptoBiz backend.</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p class="text-xs uppercase tracking-wide text-white/40">REST APIs</p>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl font-semibold text-white">{{ totalHttpEndpoints }}</span>
+            <span class="text-xs text-white/40">endpoints</span>
+          </div>
+          <p class="mt-2 text-xs text-white/50">Critical calls for front-office & admin.</p>
+        </div>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p class="text-xs uppercase tracking-wide text-white/40">Live features</p>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl font-semibold text-white">{{ totalRealtimeFeatures }}</span>
+            <span class="text-xs text-white/40">touchpoints</span>
+          </div>
+          <p class="mt-2 text-xs text-white/50">Product surfaces relying on streaming data.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <section
+          class="space-y-5 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-semibold text-white">WebSocket Streams</h3>
+              <p class="text-sm text-white/60">
+                Aggregated status for every real-time channel we expose.
+              </p>
+            </div>
+            <span class="text-xs text-white/40"
+              >{{ totalRealtimeEndpoints }} streams monitored</span
+            >
+          </div>
+
+          <div class="space-y-4">
+            <div
+              v-for="service in realtimeServices"
+              :key="service.id"
+              class="rounded-2xl border border-white/5 bg-black/30 p-5 transition hover:border-emerald-400/40 hover:bg-black/40"
+            >
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <div class="rounded-lg bg-white/10 p-2 text-white/80">
+                    <Icon :name="service.icon" class="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 class="text-base font-semibold text-white">{{ service.name }}</h4>
+                    <p class="text-xs text-white/50">{{ service.providerLabel }}</p>
+                  </div>
+                </div>
+                <span
+                  class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                  :class="
+                    service.status === 'operational'
+                      ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                      : 'border-amber-500/40 bg-amber-500/15 text-amber-200'
+                  "
+                >
+                  <span
+                    class="h-2 w-2 rounded-full"
+                    :class="service.status === 'operational' ? 'bg-emerald-400' : 'bg-amber-400'"
+                  />
+                  {{ service.status === 'operational' ? 'Operational' : 'Monitoring' }}
+                </span>
+              </div>
+
+              <p class="mt-3 text-sm text-white/70">{{ service.description }}</p>
+
+              <div
+                class="mt-3 flex flex-col gap-2 text-xs text-white/60 sm:flex-row sm:items-center"
+              >
+                <code
+                  class="flex-1 truncate rounded-lg bg-black/50 px-2 py-1 font-mono text-[11px] text-emerald-200/80"
+                >
+                  {{ service.endpoint }}
+                </code>
+                <button
+                  class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-white/70 transition hover:border-emerald-400/40 hover:text-emerald-200"
+                  type="button"
+                  @click="copyToClipboard(service.endpoint)"
+                >
+                  <Icon name="lucide:clipboard-copy" class="h-3.5 w-3.5" />
+                  Copy
+                </button>
+              </div>
+
+              <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div class="rounded-xl border border-white/5 bg-black/40 p-3">
+                  <p class="text-[11px] uppercase tracking-wide text-white/40">Latency p95</p>
+                  <p class="mt-1 text-sm font-medium text-white">{{ service.latency }}</p>
+                </div>
+                <div class="rounded-xl border border-white/5 bg-black/40 p-3">
+                  <p class="text-[11px] uppercase tracking-wide text-white/40">Throughput</p>
+                  <p class="mt-1 text-sm font-medium text-white">{{ service.throughput }}</p>
+                </div>
+              </div>
+
+              <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div v-if="service.consumers.length" class="space-y-2">
+                  <p class="text-xs uppercase tracking-wide text-white/40">Consumers</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      v-for="consumer in service.consumers"
+                      :key="consumer.name"
+                      class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70"
+                    >
+                      {{ consumer.name }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="service.actions.length" class="space-y-2">
+                  <p class="text-xs uppercase tracking-wide text-white/40">Actions</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      v-for="action in service.actions"
+                      :key="action.name"
+                      class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200"
+                    >
+                      {{ action.name }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <details class="mt-4 rounded-xl border border-white/5 bg-black/30 p-3">
+                <summary
+                  class="flex cursor-pointer items-center justify-between text-xs text-white/60"
+                >
+                  Payloads & samples
+                  <Icon name="lucide:chevron-down" class="h-4 w-4 text-white/40" />
+                </summary>
+                <div class="mt-3 space-y-3 text-xs text-white/60">
+                  <div
+                    v-for="action in service.actions"
+                    :key="`${service.id}-${action.name}`"
+                    class="rounded-lg border border-white/5 bg-black/50 p-3"
+                  >
+                    <div class="text-sm font-medium text-white">{{ action.name }}</div>
+                    <p class="mt-1 text-xs text-white/50">{{ action.description }}</p>
+                    <pre
+                      class="mt-2 overflow-x-auto rounded bg-black/70 p-2 text-[11px] text-emerald-300"
+                      >{{ action.payload }}
+                    </pre>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-white">{{ service.sampleEventTitle }}</p>
+                    <pre
+                      class="mt-2 overflow-x-auto rounded bg-black/70 p-3 text-[11px] text-emerald-300"
+                      >{{ service.sampleEventPayload }}
+                    </pre>
+                  </div>
+                  <p v-if="service.notes" class="text-xs text-white/50">{{ service.notes }}</p>
+                </div>
+              </details>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="space-y-5 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-semibold text-white">Key REST APIs</h3>
+              <p class="text-sm text-white/60">
+                Concise reference of the endpoints hit by the app.
+              </p>
+            </div>
+            <span class="text-xs text-white/40">{{ totalHttpEndpoints }} endpoints</span>
+          </div>
+
+          <div class="space-y-3">
+            <div
+              v-for="endpoint in httpEndpoints"
+              :key="`${endpoint.providerLabel}-${endpoint.url}`"
+              class="rounded-2xl border border-white/5 bg-black/30 p-4"
+            >
+              <div
+                class="flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-wide text-white/40"
+              >
+                <span class="font-semibold text-white/70">{{ endpoint.method }}</span>
+                <span class="text-white/50">{{ endpoint.providerLabel }}</span>
+              </div>
+              <code
+                class="mt-2 block truncate rounded-lg bg-black/50 px-2 py-1 font-mono text-[11px] text-white/80"
+              >
+                {{ endpoint.url }}
+              </code>
+              <p class="mt-2 text-sm font-medium text-white">{{ endpoint.name }}</p>
+              <p class="text-xs text-white/50">{{ endpoint.usage }}</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div
+          class="space-y-4 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-semibold text-white">Usage Map</h3>
+              <p class="text-sm text-white/60">Which experiences depend on WebSocket data.</p>
+            </div>
+            <span class="text-xs text-white/40"
+              >{{ totalRealtimeFeatures }} features · {{ totalServiceConsumers }} consumers</span
+            >
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div
+              v-for="usage in integrationUsage"
+              :key="usage.feature"
+              class="rounded-2xl border border-white/5 bg-black/30 p-4"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-white">{{ usage.feature }}</p>
+                  <p class="mt-1 text-xs text-white/60">{{ usage.description }}</p>
+                </div>
+                <Icon name="lucide:radio" class="h-4 w-4 text-emerald-300/70" />
+              </div>
+              <div class="mt-3 space-y-2">
+                <p class="text-[11px] uppercase tracking-wide text-white/40">Components</p>
+                <ul class="space-y-1 text-xs text-white/60">
+                  <li
+                    v-for="component in usage.components"
+                    :key="component.path"
+                    class="flex items-center gap-2"
+                  >
+                    <Icon name="lucide:file-code" class="h-3.5 w-3.5 text-white/40" />
+                    <span class="font-mono text-[11px] text-white/70">{{ component.path }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="space-y-4 rounded-2xl border border-white/8 bg-neutral-900/70 p-6 shadow-inner shadow-black/30 backdrop-blur"
+        >
+          <h3 class="text-lg font-semibold text-white">Integration Checklist</h3>
+          <ul class="space-y-3 text-sm text-white/70">
+            <li class="flex items-start gap-3">
+              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
+              <span>
+                Send a
+                <code class="bg-black/40 px-1 py-0.5 text-[11px] text-emerald-300">ping</code>
+                every 25s while the connection is idle.
+              </span>
+            </li>
+            <li class="flex items-start gap-3">
+              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
+              <span>
+                Prefer
+                <code class="bg-black/40 px-1 py-0.5 text-[11px] text-emerald-300">set_limit</code>
+                instead of reopening a socket when you need additional history.
+              </span>
+            </li>
+            <li class="flex items-start gap-3">
+              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
+              <span>
+                Auto-reconnect with exponential backoff (<span
+                  class="font-mono text-[11px] text-white/70"
+                  >useKlinesWebSocket.ts</span
+                >).
+              </span>
+            </li>
+            <li class="flex items-start gap-3">
+              <Icon name="lucide:check" class="mt-0.5 h-4 w-4 text-emerald-300" />
+              <span>Surface WebSocket status to users (badge, banner, toast, etc.).</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <div v-if="activeTab === 'news'" class="space-y-6">
+      <!-- existing news content -->
+    </div>
   </div>
 </template>
 
@@ -1753,6 +2077,7 @@ const tabs = [
   { id: 'alerts', label: 'Alerts', icon: 'lucide:bell' },
   { id: 'portfolios', label: 'Portfolios', icon: 'lucide:wallet' },
   { id: 'favorites', label: 'Favorites', icon: 'lucide:star' },
+  { id: 'integrations', label: 'Integrations', icon: 'lucide:network' },
   { id: 'news', label: 'News', icon: 'lucide:newspaper' },
   { id: 'klines', label: 'Klines', icon: 'lucide:trending-up' },
 ]
@@ -2328,6 +2653,12 @@ watch(activeTab, (tab) => {
   if (tab === 'alerts' && alerts.value.length === 0) loadAlerts()
   if (tab === 'portfolios' && portfolios.value.length === 0) loadPortfolios()
   if (tab === 'favorites' && favorites.value.length === 0) loadFavorites()
+  if (tab === 'integrations') {
+    refreshIntegrationInsights()
+    if (newsData.value.articles.length === 0 && !newsPending.value) {
+      loadNews()
+    }
+  }
   if (tab === 'news' && newsData.value.articles.length === 0) loadNews()
   if (tab === 'klines' && klinesData.value.klines.length === 0) loadKlines()
 })
@@ -2338,5 +2669,425 @@ watch(newsPage, () => {
 
 onMounted(() => {
   loadDashboard()
+  refreshIntegrationInsights()
 })
+
+const integrationsRefreshedAt = ref(new Date())
+const runtimeConfig = useRuntimeConfig()
+
+type WebsocketStatus = 'operational' | 'monitoring'
+
+interface WebsocketConsumerInfo {
+  name: string
+  description: string
+}
+
+interface WebsocketActionInfo {
+  name: string
+  description: string
+  payload: string
+}
+
+interface WebsocketServiceInfo {
+  id: string
+  name: string
+  icon: string
+  endpoint: string
+  status: WebsocketStatus
+  latency: string
+  throughput: string
+  description: string
+  consumers: WebsocketConsumerInfo[]
+  actions: WebsocketActionInfo[]
+  sampleEventTitle: string
+  sampleEventPayload: string
+  notes?: string
+}
+
+interface WebsocketUsageEntry {
+  feature: string
+  serviceId: string
+  description: string
+  components: Array<{ label: string; path: string }>
+}
+
+const serverWsBaseUrl = computed(() => runtimeConfig.public?.wsBaseUrl ?? 'ws://127.0.0.1:8004')
+const binanceWsBaseUrl = computed(
+  () => runtimeConfig.public?.binanceWsBase ?? 'wss://stream.binance.com:9443/ws',
+)
+
+const binanceRealtimeServices = computed<WebsocketServiceInfo[]>(() => {
+  const normalizedBinanceWs = binanceWsBaseUrl.value.replace(/\/ws$/, '/ws')
+
+  const sampleMiniTickerEvent = JSON.stringify(
+    {
+      e: '24hrMiniTicker',
+      E: 1720387200123,
+      s: 'BTCUSDT',
+      c: '67350.21',
+      o: '66500.10',
+      h: '67842.99',
+      l: '66012.45',
+      v: '15234.512',
+      q: '102345678.12',
+    },
+    null,
+    2,
+  )
+
+  const sampleKlineEvent = JSON.stringify(
+    {
+      type: 'kline',
+      symbol: 'BTCUSDT',
+      interval: '1m',
+      o: '67250.12',
+      h: '67270.55',
+      l: '67240.01',
+      c: '67265.88',
+      v: '25.46',
+      t: 1719993600000,
+    },
+    null,
+    2,
+  )
+
+  return [
+    {
+      id: 'binance-mini-ticker',
+      name: 'Binance Mini Ticker',
+      icon: 'lucide:rss',
+      endpoint: `${normalizedBinanceWs}{symbol}@miniTicker`,
+      status: 'operational',
+      latency: '~80 ms (p95)',
+      throughput: 'Event-driven',
+      description: 'Streams price, volume, and 24h change for a spot symbol.',
+      consumers: [
+        {
+          name: 'Asset Overview',
+          description: 'Summary card on asset pages with live change.',
+        },
+        {
+          name: 'Ticker hook',
+          description: '`useTicker` composable and market mini widgets.',
+        },
+      ],
+      actions: [
+        {
+          name: 'subscribe',
+          description: 'Direct connection to `{symbol}@miniTicker` (auto-reconnect).',
+          payload: JSON.stringify({ action: 'connect', stream: '{symbol}@miniTicker' }, null, 2),
+        },
+      ],
+      sampleEventTitle: 'Mini ticker (BTCUSDT)',
+      sampleEventPayload: sampleMiniTickerEvent,
+    },
+    {
+      id: 'binance-kline-direct',
+      name: 'Binance Raw Klines',
+      icon: 'lucide:activity',
+      endpoint: `${normalizedBinanceWs}{symbol}@kline_{interval}`,
+      status: 'operational',
+      latency: '~110 ms (p95)',
+      throughput: '≤ 120 updates/s',
+      description: 'Native Binance kline stream used for comparisons and frontend QA.',
+      consumers: [
+        {
+          name: 'useBinanceWS.kline',
+          description: 'Direct fallback when the consolidated internal feed is unavailable.',
+        },
+        {
+          name: 'Admin · QA',
+          description: 'Ad-hoc inspection of candles straight from Binance.',
+        },
+      ],
+      actions: [
+        {
+          name: 'subscribe',
+          description: 'Connect to `{symbol}@kline_{interval}`.',
+          payload: JSON.stringify(
+            { action: 'connect', stream: '{symbol}@kline_{interval}' },
+            null,
+            2,
+          ),
+        },
+        {
+          name: 'close',
+          description: 'Close the socket manually; otherwise auto-reconnect stays active.',
+          payload: JSON.stringify({ action: 'close' }, null, 2),
+        },
+      ],
+      sampleEventTitle: 'Binance kline envelope',
+      sampleEventPayload: JSON.stringify(
+        {
+          e: 'kline',
+          E: 1720387200456,
+          s: 'BTCUSDT',
+          k: {
+            t: 1720387140000,
+            T: 1720387199999,
+            i: '1m',
+            o: '67300.10',
+            h: '67345.00',
+            l: '67280.00',
+            c: '67320.25',
+            v: '52.431',
+            x: false,
+          },
+        },
+        null,
+        2,
+      ),
+      notes: 'Used occasionally; the app prefers the consolidated CryptoBiz feed for consistency.',
+    },
+    {
+      id: 'klines',
+      name: 'Market Klines Stream',
+      icon: 'lucide:candlestick-chart',
+      endpoint: `${serverWsBaseUrl.value}/ws/klines/{symbol}/{interval}`,
+      status: 'operational',
+      latency: '~120 ms (p95)',
+      throughput: '≤ 100 updates/s',
+      description:
+        'Streams consolidated OHLCV data for spot markets. Used by trading dashboards and internal monitoring.',
+      consumers: [
+        {
+          name: 'Our View Chart',
+          description: 'Real-time candlestick & volume rendering for flagship assets.',
+        },
+        {
+          name: 'Compare Page',
+          description: 'Synchronised price comparisons without overloading the REST API.',
+        },
+        {
+          name: 'Admin · Klines',
+          description: 'Product & QA debugging view available from this back office.',
+        },
+      ],
+      actions: [
+        {
+          name: 'subscribe',
+          description: 'Start receiving the live kline stream for the current symbol/interval.',
+          payload: JSON.stringify({ action: 'subscribe' }, null, 2),
+        },
+        {
+          name: 'set_limit',
+          description: 'Adjust historical depth on the fly (supports 1 - 1000 klines).',
+          payload: JSON.stringify({ action: 'set_limit', limit: 300 }, null, 2),
+        },
+        {
+          name: 'get_latest',
+          description: 'Request an immediate snapshot without closing the socket.',
+          payload: JSON.stringify({ action: 'get_latest' }, null, 2),
+        },
+        {
+          name: 'ping',
+          description: 'Keep the connection alive when the market is quiet.',
+          payload: JSON.stringify({ action: 'ping' }, null, 2),
+        },
+      ],
+      sampleEventTitle: 'Sample kline payload',
+      sampleEventPayload: sampleKlineEvent,
+      notes:
+        'Messages are ordered by opening time and deduplicated before reaching the client. Auto-reconnect uses exponential backoff.',
+    },
+  ]
+})
+
+const integrationUsage = computed<WebsocketUsageEntry[]>(() => [
+  {
+    feature: 'Our View Live Chart',
+    serviceId: 'klines',
+    description: 'Delivers OHLCV data for BTC, ETH, XRP and BNB in real time.',
+    components: [
+      {
+        label: 'MarketApexKlinesChart.vue',
+        path: 'app/components/Charts/MarketApexKlinesChart.vue',
+      },
+      { label: 'useKlinesWebSocket.ts', path: 'app/composables/useKlinesWebSocket.ts' },
+    ],
+  },
+  {
+    feature: 'Admin · Klines tab',
+    serviceId: 'klines',
+    description:
+      'Allows product and support teams to QA WebSocket payloads directly in the back office.',
+    components: [{ label: 'admin.vue (Klines tab)', path: 'app/pages/admin.vue#klines' }],
+  },
+  {
+    feature: 'Compare page live feed',
+    serviceId: 'klines',
+    description: 'Refreshes comparison charts without additional REST polling.',
+    components: [{ label: 'pages/compare.vue', path: 'app/pages/compare.vue' }],
+  },
+])
+
+const totalRealtimeEndpoints = computed(
+  () => binanceRealtimeServices.value.length + serverRealtimeServices.value.length,
+)
+const totalHttpEndpoints = computed(
+  () => binanceHttpEndpoints.value.length + serverHttpEndpoints.value.length,
+)
+const totalServiceConsumers = computed(
+  () =>
+    binanceRealtimeServices.value.reduce((acc, service) => acc + service.consumers.length, 0) +
+    serverRealtimeServices.value.reduce((acc, service) => acc + service.consumers.length, 0),
+)
+const totalRealtimeFeatures = computed(() => integrationUsage.value.length)
+
+const copyFeedback = ref('')
+let copyTimeout: ReturnType<typeof setTimeout> | null = null
+
+function refreshIntegrationInsights() {
+  integrationsRefreshedAt.value = new Date()
+}
+
+function formatDateTime(date: Date): string {
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+// Used via template copy buttons in the WebSockets analytics tab
+
+async function copyToClipboard(value: string) {
+  if (typeof navigator === 'undefined' || !navigator.clipboard) {
+    copyFeedback.value = 'Clipboard unavailable'
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(value)
+    copyFeedback.value = 'Endpoint copied'
+  } catch (error) {
+    console.error('Failed to copy to clipboard:', error)
+    copyFeedback.value = 'Unable to copy'
+  }
+
+  if (copyTimeout) clearTimeout(copyTimeout)
+  copyTimeout = setTimeout(() => {
+    copyFeedback.value = ''
+  }, 2000)
+}
+
+onBeforeUnmount(() => {
+  if (copyTimeout) clearTimeout(copyTimeout)
+})
+
+const binanceHttpEndpoints = computed(() => [
+  {
+    name: '24h ticker statistics',
+    method: 'GET',
+    url: 'https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT',
+    usage: 'Market tables, highlights, portfolio valuations',
+  },
+  {
+    name: 'Exchange info (spot)',
+    method: 'GET',
+    url: 'https://api.binance.com/api/v3/exchangeInfo',
+    usage: 'Symbols metadata & filters',
+  },
+  {
+    name: 'Compare page historical klines',
+    method: 'GET',
+    url: 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=500',
+    usage: 'Initial chart load before live sync',
+  },
+])
+
+const serverRealtimeServices = computed<WebsocketServiceInfo[]>(() => [
+  {
+    id: 'alerts-ws',
+    name: 'Alerts Notifications Stream',
+    icon: 'lucide:bell-ring',
+    endpoint: `${serverWsBaseUrl.value}/ws/alerts`,
+    status: 'monitoring',
+    latency: '~180 ms (p95)',
+    throughput: 'Event-driven',
+    description: 'Pushes triggered price alerts to connected dashboards and clients.',
+    consumers: [
+      {
+        name: 'Back-office Alerts',
+        description: 'Live feedback when an operator toggles a price alert.',
+      },
+      {
+        name: 'Notifications plugin',
+        description: 'Frontend toast displayed instantly after trigger.',
+      },
+    ],
+    actions: [
+      {
+        name: 'subscribe',
+        description: 'Register to receive alert state changes.',
+        payload: JSON.stringify({ action: 'subscribe', scope: 'alerts' }, null, 2),
+      },
+    ],
+    sampleEventTitle: 'Sample alert event',
+    sampleEventPayload: JSON.stringify(
+      {
+        type: 'alert.triggered',
+        alertId: 'alert_123',
+        symbol: 'BTCUSDT',
+        direction: 'above',
+        targetPrice: 68000,
+        triggeredAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
+    notes: 'Currently under monitoring while push delivery is being rolled out.',
+  },
+])
+
+const serverHttpEndpoints = computed(() => [
+  {
+    name: 'Admin news proxy',
+    method: 'GET',
+    url: '/api/admin/news?per_page=50',
+    usage: 'Back-office news QA & Integrations tab snapshot',
+  },
+  {
+    name: 'Admin klines proxy',
+    method: 'GET',
+    url: '/api/admin/klines/BTCUSDT/1h',
+    usage: 'Internal QA for Binance WebSocket payloads',
+  },
+  {
+    name: 'Price alerts API',
+    method: 'POST/PUT/DELETE',
+    url: '/api/alerts',
+    usage: 'Create, toggle, reset alerts from UI and integrations',
+  },
+  {
+    name: 'Favorites persistence',
+    method: 'GET/POST',
+    url: '/api/favorites',
+    usage: 'Store user favorites (cryptos & news)',
+  },
+])
+
+const realtimeServices = computed(() => [
+  ...binanceRealtimeServices.value.map((service) => ({
+    ...service,
+    providerLabel: 'Binance · External',
+  })),
+  ...serverRealtimeServices.value.map((service) => ({
+    ...service,
+    providerLabel: 'CryptoBiz · Internal',
+  })),
+])
+
+const httpEndpoints = computed(() => [
+  ...binanceHttpEndpoints.value.map((endpoint) => ({
+    ...endpoint,
+    providerLabel: 'Binance · External',
+  })),
+  ...serverHttpEndpoints.value.map((endpoint) => ({
+    ...endpoint,
+    providerLabel: 'CryptoBiz · Internal',
+  })),
+])
 </script>
