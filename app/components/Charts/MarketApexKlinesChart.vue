@@ -1,188 +1,371 @@
 <template>
   <div class="bg-neutral-900/60 border border-white/5 rounded-2xl overflow-hidden">
-    <div class="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
-      <div class="flex items-center gap-3">
-        <div class="text-sm">
-          <div class="font-semibold">Market Chart</div>
-          <div class="text-white/40 tabular-nums">
-            <span v-if="!pending">
-              {{ baseSymbol }} • {{ interval }}
-              <span v-if="rangeText" class="ml-2 text-white/30">({{ rangeText }})</span>
+    <!-- Header avec contrôles -->
+    <div class="flex flex-col gap-4 p-4 md:p-6 border-b border-white/5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div>
+            <div class="text-lg font-semibold text-white">{{ baseSymbol }}</div>
+            <div class="text-sm text-white/50 tabular-nums">
+              <span v-if="!pending && displayed.length > 0">
+                {{ formatPrice(displayed[displayed.length - 1]?.c || 0) }}
+                <span class="ml-2" :class="lastChange >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                  {{ lastChange >= 0 ? '+' : '' }}{{ lastChangePercent.toFixed(2) }}%
+                </span>
+              </span>
+              <span v-else class="inline-block w-32 h-4 bg-white/10 animate-pulse rounded"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span
+            v-if="connected"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+          >
+            <Icon name="lucide:radio" class="h-3.5 w-3.5 animate-pulse" /> Live
+          </span>
+          <span
+            v-else
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 text-white/40 border border-white/10"
+          >
+            <Icon name="lucide:wifi-off" class="h-3.5 w-3.5" /> Offline
+          </span>
+        </div>
+      </div>
+
+      <!-- Contrôles d'intervalle et de plage -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Intervalles -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-white/50 font-medium">Interval:</span>
+          <select
+            v-model="interval"
+            class="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          >
+            <option v-for="it in intervals" :key="it" :value="it" class="bg-neutral-900">
+              {{ it }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Plages de temps -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-white/50 font-medium">Range:</span>
+          <select
+            v-model="selectedRange"
+            class="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+          >
+            <option v-for="r in timeRanges" :key="r.value" :value="r.value" class="bg-neutral-900">
+              {{ r.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Indicateurs techniques -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs text-white/50 font-medium">Indicators:</span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button
+              @click="selectAllIndicators"
+              class="px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white/60 hover:text-white/90 hover:bg-white/10 text-xs transition-colors"
+              title="Select All"
+            >
+              All
+            </button>
+            <button
+              @click="deselectAllIndicators"
+              class="px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white/60 hover:text-white/90 hover:bg-white/10 text-xs transition-colors"
+              title="Deselect All"
+            >
+              None
+            </button>
+            <div class="w-px h-4 bg-white/10"></div>
+            <button
+              @click="toggleIndicator('volume')"
+              class="px-2.5 py-1.5 rounded-lg border text-xs transition-colors"
+              :class="
+                activeIndicators.volume
+                  ? 'bg-white/10 text-white border-white/20'
+                  : 'bg-white/5 text-white/60 border-white/10 hover:text-white/90 hover:bg-white/10'
+              "
+              title="Volume"
+            >
+              <Icon name="lucide:bar-chart-3" class="h-3.5 w-3.5 inline-block mr-1" />
+              Volume
+            </button>
+            <button
+              @click="toggleIndicator('sma20')"
+              class="px-2.5 py-1.5 rounded-lg border text-xs transition-colors"
+              :class="
+                activeIndicators.sma20
+                  ? 'bg-white/10 text-white border-white/20'
+                  : 'bg-white/5 text-white/60 border-white/10 hover:text-white/90 hover:bg-white/10'
+              "
+              title="SMA 20"
+            >
+              MA20
+            </button>
+            <button
+              @click="toggleIndicator('sma50')"
+              class="px-2.5 py-1.5 rounded-lg border text-xs transition-colors"
+              :class="
+                activeIndicators.sma50
+                  ? 'bg-white/10 text-white border-white/20'
+                  : 'bg-white/5 text-white/60 border-white/10 hover:text-white/90 hover:bg-white/10'
+              "
+              title="SMA 50"
+            >
+              MA50
+            </button>
+            <button
+              @click="toggleIndicator('ema20')"
+              class="px-2.5 py-1.5 rounded-lg border text-xs transition-colors"
+              :class="
+                activeIndicators.ema20
+                  ? 'bg-white/10 text-white border-white/20'
+                  : 'bg-white/5 text-white/60 border-white/10 hover:text-white/90 hover:bg-white/10'
+              "
+              title="EMA 20"
+            >
+              EMA20
+            </button>
+            <button
+              @click="toggleIndicator('rsi')"
+              class="px-2.5 py-1.5 rounded-lg border text-xs transition-colors"
+              :class="
+                activeIndicators.rsi
+                  ? 'bg-white/10 text-white border-white/20'
+                  : 'bg-white/5 text-white/60 border-white/10 hover:text-white/90 hover:bg-white/10'
+              "
+              title="RSI"
+            >
+              RSI
+            </button>
+          </div>
+        </div>
+
+        <!-- Statistiques rapides -->
+        <div v-if="displayed.length > 0" class="flex items-center gap-4 ml-auto text-xs">
+          <div class="text-white/50">
+            <span class="text-white/30">H:</span>
+            <span class="ml-1 text-emerald-400 font-medium tabular-nums">
+              {{ formatPrice(high24h) }}
             </span>
-            <span v-else class="inline-block w-40 h-4 bg-white/10 animate-pulse rounded"></span>
+          </div>
+          <div class="text-white/50">
+            <span class="text-white/30">L:</span>
+            <span class="ml-1 text-rose-400 font-medium tabular-nums">
+              {{ formatPrice(low24h) }}
+            </span>
+          </div>
+          <div class="text-white/50">
+            <span class="text-white/30">Vol:</span>
+            <span class="ml-1 text-white/70 font-medium tabular-nums">
+              {{ formatVolume(volume24h) }}
+            </span>
           </div>
         </div>
       </div>
-
-      <div class="flex flex-wrap items-center gap-3">
-        <div
-          class="relative inline-grid grid-cols-2 rounded-xl border border-white/10 bg-white/5 p-1 text-xs"
-          role="tablist"
-          aria-label="Interval"
-        >
-          <div
-            class="absolute inset-y-1 w-1/2 rounded-lg bg-white/10 transition-transform duration-300"
-            :style="{ transform: `translateX(${intervalIndex * 100}%)` }"
-            aria-hidden="true"
-          />
-          <button
-            v-for="it in intervals"
-            :key="it"
-            role="tab"
-            class="relative z-10 px-2.5 py-1.5 rounded-lg transition-colors"
-            :class="interval === it ? 'text-white' : 'text-white/60 hover:text-white/90'"
-            @click="interval = it"
-          >
-            {{ it }}
-          </button>
-        </div>
-
-        <div
-          class="relative inline-grid grid-cols-2 rounded-xl border border-white/10 bg-white/5 p-1 text-xs"
-          role="tablist"
-          aria-label="Time Range"
-        >
-          <div
-            class="absolute inset-y-1 w-1/2 rounded-lg bg-white/10 transition-transform duration-300"
-            :style="{ transform: `translateX(${rangeIndex * 100}%)` }"
-            aria-hidden="true"
-          />
-          <button
-            v-for="r in timeRanges"
-            :key="r.value"
-            role="tab"
-            class="relative z-10 px-2.5 py-1.5 rounded-lg transition-colors"
-            :class="selectedRange === r.value ? 'text-white' : 'text-white/60 hover:text-white/90'"
-            @click="selectedRange = r.value"
-          >
-            {{ r.label }}
-          </button>
-        </div>
-
-        <span
-          v-if="connected"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs bg-green-500/20 text-green-400"
-        >
-          <Icon name="lucide:radio" class="h-4 w-4" /> Live
-        </span>
-        <span
-          v-else
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs bg-white/5 text-white/40"
-        >
-          <Icon name="lucide:wifi-off" class="h-4 w-4" /> Offline
-        </span>
-      </div>
     </div>
+
+    <!-- Chart -->
     <ClientOnly>
-      <div v-if="pending" class="h-[430px] p-4">
+      <div v-if="pending && displayed.length === 0" class="h-[500px] p-4">
         <div class="h-full rounded-lg bg-white/5 animate-pulse" />
       </div>
 
       <div
         v-else-if="!error && displayed.length === 0"
-        class="h-[430px] grid place-items-center text-center p-6"
+        class="h-[500px] grid place-items-center text-center p-6"
       >
         <div class="space-y-4">
           <div class="flex items-center justify-center gap-2 text-white/70">
             <Icon name="lucide:info" class="h-5 w-5" />
             <span>No data available for this cryptocurrency at this time.</span>
           </div>
-
           <div class="flex items-center justify-center gap-3">
             <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/5 hover:bg-white/10"
-              @click="fetchData"
+              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-colors"
+              @click="refresh"
             >
               <Icon name="lucide:refresh-ccw" class="h-4 w-4" /> Refresh
             </button>
-
             <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/10 hover:bg-white/20"
+              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-white/10 hover:bg-white/20 transition-colors"
               @click="$emit('switch-chart', 'tv')"
-              aria-label="Voir le graphique TradingView"
             >
-              <Icon name="lucide:line-chart" class="h-4 w-4" /> See TradingView
+              <Icon name="lucide:line-chart" class="h-4 w-4" /> TradingView
             </button>
           </div>
         </div>
       </div>
 
-      <div v-else-if="error" class="h-[430px] grid place-items-center text-center p-6">
-        <div class="space-y-3 text-red-400/90">
+      <div v-else-if="error" class="h-[500px] grid place-items-center text-center p-6">
+        <div class="space-y-4 text-red-400/90">
           <div class="flex items-center justify-center gap-2">
             <Icon name="lucide:alert-triangle" class="h-5 w-5" />
-            <span>Unable to load the graph.</span>
+            <span class="font-medium">Unable to load the chart</span>
           </div>
-          <div class="flex items-center justify-center gap-2 text-white/70 text-sm max-w-md">
-            <span>{{ error }}</span>
-          </div>
-          <div class="text-xs text-white/50 max-w-md">
-            <p v-if="error.includes('server') || error.includes('Server')">
-              This appears to be a server-side error. Please check the server logs for more details.
-            </p>
-          </div>
+          <div class="text-sm text-white/70 max-w-md">{{ error }}</div>
           <div class="flex items-center justify-center gap-3">
             <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/5 hover:bg-white/10 text-white/80"
-              @click="fetchData"
+              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 text-white/80 transition-colors"
+              @click="refresh"
             >
               <Icon name="lucide:refresh-ccw" class="h-4 w-4" /> Try again
             </button>
             <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs bg-white/10 hover:bg-white/20"
+              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm bg-white/10 hover:bg-white/20 transition-colors"
               @click="$emit('switch-chart', 'tv')"
             >
-              <Icon name="lucide:line-chart" class="h-4 w-4" /> See TradingView
+              <Icon name="lucide:line-chart" class="h-4 w-4" /> TradingView
             </button>
           </div>
         </div>
       </div>
 
-      <apexchart v-else type="candlestick" height="430" :options="options" :series="series" />
+      <div v-else ref="chartContainer" class="h-[500px] w-full relative" />
 
       <template #fallback>
-        <div class="h-[430px] grid place-items-center">Load chart…</div>
+        <div class="h-[500px] grid place-items-center">
+          <div class="text-white/50">Loading chart…</div>
+        </div>
       </template>
     </ClientOnly>
   </div>
 </template>
 
 <script setup lang="ts">
-import ApexCharts from 'apexcharts'
-import { computed, ref, watch, nextTick, onBeforeUnmount } from 'vue'
+import {
+  createChart,
+  ColorType,
+  CandlestickSeries,
+  HistogramSeries,
+  LineSeries,
+} from 'lightweight-charts'
+import type { CandlestickData, HistogramData, LineData, Time } from 'lightweight-charts'
+import { computed, ref, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { useKlinesWebSocket } from '~/composables/useKlinesWebSocket'
 
-type Interval = '30m' | '1h'
+// Types pour le chart
+type ChartApi = ReturnType<typeof createChart>
+
+// Types
+type Interval =
+  | '1s'
+  | '1m'
+  | '3m'
+  | '5m'
+  | '15m'
+  | '30m'
+  | '1h'
+  | '2h'
+  | '4h'
+  | '6h'
+  | '8h'
+  | '12h'
+  | '1d'
+  | '3d'
+  | '1w'
+  | '1M'
+
+type TimeRange = '1d' | '7d' | '30d' | '90d' | '1y' | 'all'
+
+// Props
 const props = defineProps<{ symbol: string; interval?: Interval }>()
 
-type TimeRange = '1d' | '7d'
+// Emits
+defineEmits<{
+  'switch-chart': [type: 'tv']
+}>()
+
+// Intervalles disponibles
+const intervals: Interval[] = [
+  '1m',
+  '3m',
+  '5m',
+  '15m',
+  '30m',
+  '1h',
+  '2h',
+  '4h',
+  '6h',
+  '8h',
+  '12h',
+  '1d',
+  '3d',
+  '1w',
+  '1M',
+]
+
+// Plages de temps
 const timeRanges: Array<{ label: string; value: TimeRange; seconds: number }> = [
   { label: '1D', value: '1d', seconds: 24 * 60 * 60 },
   { label: '7D', value: '7d', seconds: 7 * 24 * 60 * 60 },
+  { label: '30D', value: '30d', seconds: 30 * 24 * 60 * 60 },
+  { label: '90D', value: '90d', seconds: 90 * 24 * 60 * 60 },
+  { label: '1Y', value: '1y', seconds: 365 * 24 * 60 * 60 },
+  { label: 'All', value: 'all', seconds: Infinity },
 ]
 
-const selectedRange = ref<TimeRange>('1d')
-const WINDOW_SEC = computed(() => {
-  const range = timeRanges.find((r) => r.value === selectedRange.value)
-  return range?.seconds ?? 24 * 60 * 60
-})
-const WINDOW_MS = computed(() => WINDOW_SEC.value * 1000)
-
-const intervals: Interval[] = ['30m', '1h']
-const intervalMs: Record<Interval, number> = {
-  '30m': 30 * 60_000,
-  '1h': 60 * 60_000,
-}
-
+// État
 const symbol = ref(props.symbol)
 const interval = ref<Interval>(props.interval ?? '1h')
-const rangeIndex = computed(() => {
-  return Math.max(
-    0,
-    timeRanges.findIndex((r) => r.value === selectedRange.value),
-  )
+const selectedRange = ref<TimeRange>('7d')
+const showVolume = ref(true)
+
+// Indicateurs techniques
+const activeIndicators = ref({
+  volume: false,
+  sma20: false,
+  sma50: false,
+  ema20: false,
+  rsi: false,
 })
 
+const selectedIndicators = ref<string[]>([])
+
+// Séries d'indicateurs
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sma20Series: any = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let sma50Series: any = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let ema20Series: any = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let rsiSeries: any = null
+
+// Conversion intervalle en millisecondes
+const intervalMs: Record<Interval, number> = {
+  '1s': 1000,
+  '1m': 60 * 1000,
+  '3m': 3 * 60 * 1000,
+  '5m': 5 * 60 * 1000,
+  '15m': 15 * 60 * 1000,
+  '30m': 30 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '2h': 2 * 60 * 60 * 1000,
+  '4h': 4 * 60 * 60 * 1000,
+  '6h': 6 * 60 * 60 * 1000,
+  '8h': 8 * 60 * 60 * 1000,
+  '12h': 12 * 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '3d': 3 * 24 * 60 * 60 * 1000,
+  '1w': 7 * 24 * 60 * 60 * 1000,
+  '1M': 30 * 24 * 60 * 60 * 1000,
+}
+
+// Calculer la fenêtre de temps
+const WINDOW_SEC = computed(() => {
+  const range = timeRanges.find((r) => r.value === selectedRange.value)
+  return range?.seconds ?? 7 * 24 * 60 * 60
+})
+const WINDOW_MS = computed(() =>
+  WINDOW_SEC.value === Infinity ? Infinity : WINDOW_SEC.value * 1000,
+)
+
+// Watchers pour props
 watch(
   () => props.symbol,
   (s) => {
@@ -196,15 +379,30 @@ watch(
   },
 )
 
+// WebSocket
 type Ohlcv = { t: number; o: number; h: number; l: number; c: number; v: number }
 
 const rows = ref<Ohlcv[]>([])
 const pending = ref(false)
 const error = ref<unknown>(null)
-const effectiveFromSec = ref<number | null>(null)
-const effectiveToSec = ref<number | null>(null)
 
-// Utiliser uniquement les WebSockets pour les données
+// Calculer le nombre de klines nécessaires
+const neededKlines = computed(() => {
+  if (WINDOW_MS.value === Infinity) return 1000
+  const intervalMsValue = intervalMs[interval.value]
+  return Math.min(1000, Math.ceil(WINDOW_MS.value / intervalMsValue) + 50)
+})
+
+const limitRef = ref(neededKlines.value)
+
+watch(
+  neededKlines,
+  (newLimit) => {
+    limitRef.value = newLimit
+  },
+  { immediate: true },
+)
+
 const enabled = ref(true)
 const {
   data: wsData,
@@ -213,14 +411,15 @@ const {
   error: wsError,
   refresh: refreshWS,
   disconnect: disconnectWS,
+  setLimit,
 } = useKlinesWebSocket({
   symbol,
   interval,
-  updateInterval: 1, // Mise à jour toutes les secondes
+  updateInterval: 1,
+  limit: limitRef,
   enabled,
 })
 
-// Mettre à jour pending et error depuis le WebSocket
 watch(
   wsPending,
   (value) => {
@@ -237,191 +436,547 @@ watch(
   { immediate: true },
 )
 
-// Convertir les données WebSocket en format Ohlcv
+watch(neededKlines, (newLimit) => {
+  limitRef.value = newLimit
+  if (connected.value) {
+    setLimit(newLimit)
+  }
+})
+
+// Convertir les données WebSocket
 watch(
   [wsData, interval],
   ([newWsData]) => {
+    console.log('[Chart] WebSocket data received:', {
+      dataLength: newWsData?.length || 0,
+      interval: interval.value,
+      firstPoint: newWsData?.[0],
+      lastPoint: newWsData?.[newWsData?.length - 1],
+    })
+
     if (!newWsData || newWsData.length === 0) {
+      console.log('[Chart] No WebSocket data, clearing rows')
       rows.value = []
-      effectiveFromSec.value = null
-      effectiveToSec.value = null
       pending.value = false
       return
     }
 
-    // Convertir les données WebSocket en format Ohlcv
-    const wsRows: Ohlcv[] = newWsData.map((point) => ({
-      t: point.t,
-      o: point.o,
-      h: point.h,
-      l: point.l,
-      c: point.c,
-      v: point.v,
-    }))
+    const wsRows: Ohlcv[] = newWsData.map((point, index) => {
+      // Log les premiers points pour debug
+      if (index < 3) {
+        console.log(`[Chart] WebSocket point ${index}:`, {
+          original: point,
+          t: point.t,
+          o: point.o,
+          h: point.h,
+          l: point.l,
+          c: point.c,
+          v: point.v,
+          tType: typeof point.t,
+          tIsValid: Number.isFinite(point.t),
+        })
+      }
 
-    // Trier par timestamp (ascendant)
+      return {
+        t: point.t,
+        o: point.o,
+        h: point.h,
+        l: point.l,
+        c: point.c,
+        v: point.v,
+      }
+    })
+
     wsRows.sort((a, b) => a.t - b.t)
 
-    // Filtrer les doublons par timestamp
     const uniqueRows = new Map<number, Ohlcv>()
     wsRows.forEach((row) => {
       uniqueRows.set(row.t, row)
     })
 
-    // Convertir en array et trier à nouveau
-    const sortedRows = Array.from(uniqueRows.values()).sort((a, b) => a.t - b.t)
+    const finalRows = Array.from(uniqueRows.values()).sort((a, b) => a.t - b.t)
 
-    // Utiliser toutes les données disponibles
-    rows.value = sortedRows
-    pending.value = false // Les données sont arrivées
+    console.log('[Chart] Processed WebSocket data:', {
+      originalCount: newWsData.length,
+      afterSort: wsRows.length,
+      afterDedup: finalRows.length,
+      firstRow: finalRows[0],
+      lastRow: finalRows[finalRows.length - 1],
+    })
 
-    // Mettre à jour les plages effectives
-    if (sortedRows.length > 0) {
-      effectiveFromSec.value = Math.floor(sortedRows[0].t / 1000)
-      effectiveToSec.value = Math.floor(sortedRows[sortedRows.length - 1].t / 1000)
-    }
+    rows.value = finalRows
+    pending.value = false
   },
   { immediate: true },
 )
 
-// Fonction pour rafraîchir les données (demander les dernières via WebSocket)
-function fetchData() {
+function refresh() {
   refreshWS()
 }
 
-// Réinitialiser le zoom et les données quand on change de plage ou d'intervalle
-watch([selectedRange, interval], async () => {
-  isUserZooming.value = false
-  // Réinitialiser les données pour forcer le réaffichage avec le nouvel intervalle
-  rows.value = []
-  pending.value = true
-
-  // Forcer la mise à jour du graphique immédiatement
-  await nextTick()
-  try {
-    // Mettre à jour les séries avec des données vides pour forcer le réaffichage
-    ApexCharts.exec('market-apex-klines', 'updateSeries', [{ data: [] }, { data: [] }])
-    // Mettre à jour les options si nécessaire (notamment xaxis.range)
-    ApexCharts.exec(
-      'market-apex-klines',
-      'updateOptions',
-      {
-        xaxis: {
-          range: WINDOW_MS.value,
-        },
-      },
-      false,
-      true,
-      false,
-    )
-  } catch {
-    // Ignore si le chart n'est pas encore initialisé
-  }
-
-  // Le WebSocket se reconnecte automatiquement avec le nouvel intervalle
-})
-
-const neededCount = computed(() => {
-  // Calculer le nombre de points nécessaires selon l'intervalle et la plage
-  const intervalMsValue = intervalMs[interval.value]
-  return Math.max(1, Math.ceil(WINDOW_MS.value / intervalMsValue))
-})
-
+// Calculer les données affichées
 const displayed = computed(() => {
   const r = rows.value
   if (!r.length) return r
 
-  // Calculer la plage temporelle cible selon l'intervalle et la plage sélectionnée
+  if (WINDOW_MS.value === Infinity) {
+    return r
+  }
+
   const now = Date.now()
   const windowStart = now - WINDOW_MS.value
 
-  // Filtrer les données dans la plage temporelle
   let inRange = r.filter((row) => row.t >= windowStart && row.t <= now)
 
-  // Utiliser le nombre calculé de points nécessaires
-  const maxDisplayed = neededCount.value
-
-  // Si on a des données dans la plage, prendre les dernières
-  if (inRange.length > 0) {
-    // Prendre les maxDisplayed dernières données de la plage
-    const start = Math.max(0, inRange.length - maxDisplayed)
-    return inRange.slice(start)
-  }
-
-  // Sinon, si on a des données mais pas dans la plage récente,
-  // prendre les maxDisplayed dernières données disponibles (peut être utile pour les données historiques)
-  if (r.length > 0) {
+  if (inRange.length === 0 && r.length > 0) {
+    const maxDisplayed = Math.ceil(WINDOW_MS.value / intervalMs[interval.value])
     const start = Math.max(0, r.length - maxDisplayed)
     return r.slice(start)
   }
 
-  return []
+  return inRange
 })
 
-const candleSeries = computed(() =>
-  displayed.value.map((r) => ({ x: new Date(r.t), y: [r.o, r.h, r.l, r.c] })),
-)
+// Statistiques
+const lastChange = computed(() => {
+  if (displayed.value.length < 2) return 0
+  const last = displayed.value[displayed.value.length - 1]
+  const prev = displayed.value[displayed.value.length - 2]
+  return last.c - prev.c
+})
 
-// Fonction pour déterminer la couleur du volume (verte si hausse, rouge si baisse)
-function getVolumeColor(index: number): string {
-  if (index === 0) return '#10B981'
-  const current = displayed.value[index]
-  const previous = displayed.value[index - 1]
-  if (current && previous) {
-    return current.c >= previous.c ? '#10B981' : '#EF4444'
+const lastChangePercent = computed(() => {
+  if (displayed.value.length < 2) return 0
+  const last = displayed.value[displayed.value.length - 1]
+  const prev = displayed.value[displayed.value.length - 2]
+  return ((last.c - prev.c) / prev.c) * 100
+})
+
+const high24h = computed(() => {
+  if (displayed.value.length === 0) return 0
+  return Math.max(...displayed.value.map((d) => d.h))
+})
+
+const low24h = computed(() => {
+  if (displayed.value.length === 0) return 0
+  return Math.min(...displayed.value.map((d) => d.l))
+})
+
+const volume24h = computed(() => {
+  return displayed.value.reduce((sum, d) => sum + d.v, 0)
+})
+
+// Lightweight Charts
+const chartContainer = ref<HTMLDivElement | null>(null)
+let chart: ChartApi | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let candleSeries: any = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let volSeries: any = null
+let resizeObserver: ResizeObserver | null = null
+const isUserZooming = ref(false)
+let zoomResetTimer: ReturnType<typeof setTimeout> | null = null
+
+function initChart() {
+  if (!chartContainer.value || chart) return
+
+  chart = createChart(chartContainer.value, {
+    layout: {
+      background: { type: ColorType.Solid, color: 'transparent' },
+      textColor: '#9CA3AF',
+      fontSize: 11,
+      fontFamily:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    },
+    width: chartContainer.value.clientWidth,
+    height: 500,
+    grid: {
+      vertLines: {
+        color: 'rgba(255, 255, 255, 0.05)',
+        style: 0,
+      },
+      horzLines: {
+        color: 'rgba(255, 255, 255, 0.05)',
+        style: 0,
+      },
+    },
+    crosshair: {
+      mode: 1,
+      vertLine: {
+        color: 'rgba(255, 255, 255, 0.1)',
+        width: 1,
+        style: 3,
+      },
+      horzLine: {
+        color: 'rgba(255, 255, 255, 0.1)',
+        width: 1,
+        style: 3,
+      },
+    },
+    rightPriceScale: {
+      borderColor: 'rgba(255, 255, 255, 0.05)',
+      scaleMargins: {
+        top: 0.1,
+        bottom: 0.1,
+      },
+    },
+    leftPriceScale: {
+      visible: false,
+    },
+    timeScale: {
+      borderColor: 'rgba(255, 255, 255, 0.05)',
+      timeVisible: true,
+      secondsVisible: false,
+    },
+  })
+
+  // Détecter quand l'utilisateur change le zoom/pan via les événements du chart
+  chart.subscribeClick((param) => {
+    if (param.point) {
+      isUserZooming.value = true
+      resetZoomTimer()
+    }
+  })
+
+  // Écouter les changements de visible range (zoom/pan)
+  chart.timeScale().subscribeVisibleTimeRangeChange(() => {
+    // Si c'est un changement manuel (pas programmatique), marquer comme zoom utilisateur
+    if (!isUserZooming.value) {
+      // Détecter si c'est un zoom utilisateur en vérifiant si on est dans updateChart
+      // On utilise un flag pour savoir si on est en train de mettre à jour programmatiquement
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const wasUpdating = (window as any).__chartUpdating
+      if (!wasUpdating) {
+        isUserZooming.value = true
+        resetZoomTimer()
+      }
+    }
+  })
+
+  function resetZoomTimer() {
+    if (zoomResetTimer) {
+      clearTimeout(zoomResetTimer)
+    }
+    zoomResetTimer = setTimeout(() => {
+      isUserZooming.value = false
+      console.log('[Chart] Auto-zoom re-enabled after user inactivity')
+    }, 5000)
   }
-  return '#94A3B8'
+
+  // Utiliser addSeries avec les définitions de séries correctes
+  try {
+    console.log('[Chart] Creating candlestick series...', { CandlestickSeries })
+    candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: '#10B981',
+      downColor: '#EF4444',
+      borderVisible: false,
+      wickUpColor: '#10B981',
+      wickDownColor: '#EF4444',
+      priceFormat: {
+        type: 'price',
+        precision: 2,
+        minMove: 0.01,
+      },
+    })
+    console.log('[Chart] Candlestick series created:', candleSeries)
+
+    console.log('[Chart] Creating histogram series...', { HistogramSeries })
+    volSeries = chart.addSeries(HistogramSeries, {
+      color: '#10B981',
+      priceFormat: {
+        type: 'volume',
+      },
+      priceScaleId: '',
+      scaleMargins: {
+        top: 0.8,
+        bottom: 0,
+      },
+    })
+    console.log('[Chart] Histogram series created:', volSeries)
+
+    // Masquer le volume par défaut si showVolume est false
+    if (!showVolume.value) {
+      volSeries.setData([])
+    }
+
+    // Créer les séries d'indicateurs (mais ne pas les afficher encore)
+    sma20Series = chart.addSeries(LineSeries, {
+      color: '#3B82F6',
+      lineWidth: 1,
+      title: 'SMA 20',
+      priceFormat: {
+        type: 'price',
+        precision: 2,
+        minMove: 0.01,
+      },
+    })
+    sma20Series.setData([])
+
+    sma50Series = chart.addSeries(LineSeries, {
+      color: '#8B5CF6',
+      lineWidth: 1,
+      title: 'SMA 50',
+      priceFormat: {
+        type: 'price',
+        precision: 2,
+        minMove: 0.01,
+      },
+    })
+    sma50Series.setData([])
+
+    ema20Series = chart.addSeries(LineSeries, {
+      color: '#F59E0B',
+      lineWidth: 1,
+      title: 'EMA 20',
+      priceFormat: {
+        type: 'price',
+        precision: 2,
+        minMove: 0.01,
+      },
+    })
+    ema20Series.setData([])
+
+    // RSI dans un panneau séparé (priceScaleId différent)
+    rsiSeries = chart.addSeries(LineSeries, {
+      color: '#EC4899',
+      lineWidth: 1,
+      title: 'RSI',
+      priceScaleId: 'rsi',
+      priceFormat: {
+        type: 'price',
+        precision: 1,
+        minMove: 0.1,
+      },
+    })
+    rsiSeries.setData([])
+
+    // Configurer l'échelle RSI (0-100) - panneau séparé en bas
+    chart.priceScale('rsi').applyOptions({
+      scaleMargins: {
+        top: 0.7,
+        bottom: 0.1,
+      },
+      visible: true,
+      entireTextOnly: false,
+    })
+  } catch (err) {
+    console.error('[Chart] Error creating series:', err)
+    throw err
+  }
+
+  // Resize observer
+  resizeObserver = new ResizeObserver(() => {
+    if (chart && chartContainer.value) {
+      chart.applyOptions({
+        width: chartContainer.value.clientWidth,
+        height: 500,
+      })
+    }
+  })
+  resizeObserver.observe(chartContainer.value)
 }
 
-// Série de volume avec couleurs dynamiques selon la direction du prix
-const volumeSeriesColored = computed(() =>
-  displayed.value.map((r, index) => ({
-    x: new Date(r.t),
-    y: r.v,
-    fillColor: getVolumeColor(index),
-  })),
-)
+function updateChart() {
+  if (!chart || !candleSeries || !volSeries || displayed.value.length === 0) return
 
-const series = computed(() => [
-  { name: 'Price', type: 'candlestick' as const, data: candleSeries.value },
-  {
-    name: 'Volume',
-    type: 'column' as const,
-    data: volumeSeriesColored.value,
-  },
-])
+  console.log('[Chart] Update chart called', {
+    displayedCount: displayed.value.length,
+    interval: interval.value,
+    selectedRange: selectedRange.value,
+    windowMs: WINDOW_MS.value,
+    windowSec: WINDOW_SEC.value,
+  })
 
+  // Filtrer et valider les données
+  const dataMap = new Map<number, { candle: CandlestickData; volume: HistogramData }>()
+  let invalidCount = 0
+  let duplicateCount = 0
+
+  displayed.value.forEach((r, index) => {
+    // Valider les valeurs
+    const time = Math.floor(r.t / 1000) // Convertir en secondes (Unix timestamp)
+    const open = Number(r.o)
+    const high = Number(r.h)
+    const low = Number(r.l)
+    const close = Number(r.c)
+    const volume = Number(r.v)
+
+    // Log des premières données pour debug
+    if (index < 3) {
+      console.log(`[Chart] Data point ${index}:`, {
+        original: { t: r.t, o: r.o, h: r.h, l: r.l, c: r.c, v: r.v },
+        converted: { time, open, high, low, close, volume },
+        isValid: {
+          time: Number.isFinite(time) && time > 0,
+          open: Number.isFinite(open) && open > 0,
+          high: Number.isFinite(high) && high > 0,
+          low: Number.isFinite(low) && low > 0,
+          close: Number.isFinite(close) && close > 0,
+          volume: Number.isFinite(volume) && volume >= 0,
+          ohlcValid: high >= low && open >= low && open <= high && close >= low && close <= high,
+        },
+      })
+    }
+
+    // Vérifier que toutes les valeurs sont valides
+    if (
+      !Number.isFinite(time) ||
+      !Number.isFinite(open) ||
+      !Number.isFinite(high) ||
+      !Number.isFinite(low) ||
+      !Number.isFinite(close) ||
+      !Number.isFinite(volume) ||
+      time <= 0 ||
+      open <= 0 ||
+      high <= 0 ||
+      low <= 0 ||
+      close <= 0 ||
+      volume < 0 ||
+      high < low ||
+      open < low ||
+      open > high ||
+      close < low ||
+      close > high
+    ) {
+      invalidCount++
+      if (invalidCount <= 5) {
+        console.warn(`[Chart] Invalid data point ${index}:`, {
+          time,
+          open,
+          high,
+          low,
+          close,
+          volume,
+          checks: {
+            timeValid: Number.isFinite(time) && time > 0,
+            openValid: Number.isFinite(open) && open > 0,
+            highValid: Number.isFinite(high) && high > 0,
+            lowValid: Number.isFinite(low) && low > 0,
+            closeValid: Number.isFinite(close) && close > 0,
+            volumeValid: Number.isFinite(volume) && volume >= 0,
+            ohlcValid: high >= low && open >= low && open <= high && close >= low && close <= high,
+          },
+        })
+      }
+      return // Ignorer les données invalides
+    }
+
+    // Utiliser un Map pour éviter les doublons de timestamps
+    if (dataMap.has(time)) {
+      duplicateCount++
+      return
+    }
+
+    const prev = index > 0 ? displayed.value[index - 1] : null
+    const color = !prev || close >= prev.c ? '#10B981' : '#EF4444'
+
+    dataMap.set(time, {
+      candle: {
+        time: time as Time,
+        open,
+        high,
+        low,
+        close,
+      },
+      volume: {
+        time: time as Time,
+        value: volume,
+        color,
+      },
+    })
+  })
+
+  if (invalidCount > 0) {
+    console.warn(`[Chart] Total invalid data points: ${invalidCount}`)
+  }
+  if (duplicateCount > 0) {
+    console.warn(`[Chart] Total duplicate timestamps: ${duplicateCount}`)
+  }
+
+  if (dataMap.size === 0) {
+    console.error('[Chart] No valid data points after filtering')
+    return
+  }
+
+  // Convertir en arrays et trier par time (ordre croissant)
+  const sortedEntries = Array.from(dataMap.entries()).sort((a, b) => a[0] - b[0])
+  const validCandleData = sortedEntries.map(([, data]) => data.candle)
+  const validVolumeData = sortedEntries.map(([, data]) => data.volume)
+
+  console.log('[Chart] Final data:', {
+    validCount: validCandleData.length,
+    firstTime: validCandleData[0]?.time,
+    lastTime: validCandleData[validCandleData.length - 1]?.time,
+    firstCandle: validCandleData[0],
+    lastCandle: validCandleData[validCandleData.length - 1],
+    isSorted: validCandleData.every((d, i) => i === 0 || d.time >= validCandleData[i - 1].time),
+  })
+
+  try {
+    candleSeries.setData(validCandleData)
+    console.log('[Chart] Data set successfully')
+
+    // Mettre à jour les indicateurs après avoir mis à jour les données
+    nextTick(() => {
+      updateIndicators()
+    })
+  } catch (err) {
+    console.error('[Chart] Error setting chart data:', err, {
+      candleDataLength: validCandleData.length,
+      volumeDataLength: validVolumeData.length,
+      firstTime: validCandleData[0]?.time,
+      lastTime: validCandleData[validCandleData.length - 1]?.time,
+      firstCandle: validCandleData[0],
+      lastCandle: validCandleData[validCandleData.length - 1],
+    })
+  }
+
+  // Ajuster la vue seulement si l'utilisateur n'a pas zoomé
+  if (isUserZooming.value) {
+    console.log('[Chart] User is zooming, skipping auto-zoom')
+    return
+  }
+
+  // Marquer qu'on est en train de mettre à jour programmatiquement
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(window as any).__chartUpdating = true
+
+  try {
+    // Ajuster la vue
+    if (WINDOW_MS.value === Infinity) {
+      chart.timeScale().fitContent()
+    } else {
+      const last = displayed.value[displayed.value.length - 1]
+      if (last) {
+        const to = last.t / 1000
+        const from = Math.max(displayed.value[0].t / 1000, to - WINDOW_SEC.value)
+        chart.timeScale().setVisibleRange({ from: from as Time, to: to as Time })
+      }
+    }
+  } finally {
+    // Réinitialiser le flag après un court délai pour permettre aux événements de se déclencher
+    setTimeout(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(window as any).__chartUpdating = false
+    }, 100)
+  }
+}
+
+// Computed pour l'UI
 const baseSymbol = computed(
   () => symbol.value?.replace(/(USDT|FDUSD|USDC|BUSD|TUSD|USD)$/, '') || symbol.value,
 )
-const intervalIndex = computed(() =>
-  Math.max(
-    0,
-    intervals.findIndex((i) => i === interval.value),
-  ),
-)
 
+// Formatters
 function formatPrice(n: number) {
   const abs = Math.abs(n)
   const dec = abs >= 1000 ? 0 : abs >= 100 ? 1 : abs >= 1 ? 2 : 4
-  return n.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec })
-}
-function fmtDateSec(sec: number) {
-  const d = new Date(sec * 1000)
-  return d.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+  return n.toLocaleString(undefined, {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec,
   })
 }
-const rangeText = computed(() => {
-  if (!displayed.value.length) return ''
-  const start = Math.floor(displayed.value[0].t / 1000)
-  const end = Math.floor(displayed.value.at(-1)!.t / 1000)
-  return `${fmtDateSec(start)} → ${fmtDateSec(end)}`
-})
+
 function formatVolume(n: number) {
   if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T'
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B'
@@ -430,427 +985,269 @@ function formatVolume(n: number) {
   return String(Math.round(n))
 }
 
-const isUserZooming = ref(false)
+// Initialiser le chart
+onMounted(() => {
+  nextTick(() => {
+    if (chartContainer.value) {
+      initChart()
+      // Attendre un peu pour que le chart soit complètement initialisé
+      setTimeout(() => {
+        updateChart()
+      }, 100)
+    }
+  })
+})
 
-function clampToData(min: number, max: number) {
-  const data = displayed.value
-  if (!data.length) return { min, max }
-  const dataMin = data[0].t
-  const dataMax = data.at(-1)!.t
-  const span = max - min
-
-  // Permettre un petit débordement pour un zoom plus fluide
-  const padding = span * 0.1
-  const paddedMin = dataMin - padding
-  const paddedMax = dataMax + padding
-
-  if (min < paddedMin) {
-    min = Math.max(paddedMin, dataMin - span)
-    max = min + span
+// Fonctions de calcul des indicateurs
+function calculateSMA(data: number[], period: number): number[] {
+  const sma: number[] = []
+  for (let i = 0; i < data.length; i++) {
+    if (i < period - 1) {
+      sma.push(NaN)
+    } else {
+      const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0)
+      sma.push(sum / period)
+    }
   }
-  if (max > paddedMax) {
-    max = Math.min(paddedMax, dataMax + span)
-    min = max - span
-  }
-  return { min, max }
+  return sma
 }
 
-const options = computed(() => {
-  return {
-    chart: {
-      id: 'market-apex-klines',
-      background: 'transparent',
-      animations: { enabled: true, speed: 300, animateGradually: { enabled: true } },
-      foreColor: '#9CA3AF',
-      fontFamily:
-        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      toolbar: {
-        show: true,
-        offsetX: 0,
-        offsetY: 0,
-        tools: {
-          download: false,
-          selection: true,
-          zoom: true,
-          zoomin: true,
-          zoomout: true,
-          pan: true,
-          reset: true,
-        },
-        autoSelected: 'zoom',
-      },
-      zoom: {
-        enabled: true,
-        type: 'x',
-        autoScaleYaxis: true,
-      },
-      selection: {
-        enabled: true,
-        type: 'x',
-        fill: {
-          color: 'rgba(59, 130, 246, 0.2)',
-          opacity: 0.4,
-        },
-        stroke: {
-          width: 1,
-          dashArray: 5,
-          color: 'rgba(59, 130, 246, 1)',
-          opacity: 0.4,
-        },
-      },
-      brush: {
-        enabled: false,
-      },
-      events: {
-        selection: (chart: unknown, { xaxis }: { xaxis: { min: number; max: number } }) => {
-          if (xaxis?.min && xaxis?.max) {
-            isUserZooming.value = true
-            // Zoomer automatiquement sur la sélection
-            ApexCharts.exec('market-apex-klines', 'zoomX', xaxis.min, xaxis.max)
-          }
-        },
-        dataPointSelection: () => {
-          isUserZooming.value = true
-        },
-        zoomed: (_ctx: unknown, { xaxis }: { xaxis: { min: number; max: number } }): void => {
-          if ((!xaxis?.min && xaxis?.min !== 0) || (!xaxis?.max && xaxis?.max !== 0)) return
-          isUserZooming.value = true
-        },
-        beforeResetZoom: () => {
-          isUserZooming.value = false
-          const last = displayed.value.at(-1)
-          if (!last) return undefined
-          const max = last.t
-          const min = max - WINDOW_MS.value
-          const { min: m, max: M } = clampToData(min, max)
-          return { xaxis: { min: m, max: M } }
-        },
-      },
-    },
-
-    grid: {
-      borderColor: 'rgba(255, 255, 255, 0.05)',
-      strokeDashArray: 0,
-      xaxis: {
-        lines: {
-          show: true,
-        },
-      },
-      yaxis: {
-        lines: {
-          show: true,
-        },
-      },
-      padding: {
-        top: 0,
-        right: 12,
-        bottom: 0,
-        left: 12,
-      },
-    },
-
-    theme: { mode: 'dark' as const },
-    xaxis: {
-      type: 'datetime' as const,
-      labels: {
-        datetimeUTC: false,
-        style: {
-          fontSize: '11px',
-          colors: '#6B7280',
-          fontFamily: 'inherit',
-        },
-        datetimeFormatter: {
-          year: 'yyyy',
-          month: "MMM 'yy",
-          day: 'dd MMM',
-          hour: 'HH:mm',
-        },
-        maxHeight: 60,
-        rotate: 0,
-        rotateAlways: false,
-        hideOverlappingLabels: true,
-        showDuplicates: false,
-      },
-      axisBorder: {
-        show: true,
-        color: 'rgba(255, 255, 255, 0.05)',
-        height: 1,
-        width: '100%',
-        offsetX: 0,
-        offsetY: 0,
-      },
-      axisTicks: {
-        show: true,
-        borderType: 'solid',
-        color: 'rgba(255, 255, 255, 0.05)',
-        height: 4,
-        offsetX: 0,
-        offsetY: 0,
-      },
-      tooltip: {
-        enabled: false,
-      },
-      range: WINDOW_MS.value,
-    },
-    yaxis: [
-      {
-        seriesName: 'Price',
-        opposite: false,
-        tooltip: { enabled: true },
-        decimalsInFloat: 2,
-        labels: {
-          formatter: (v: number) => formatPrice(v),
-          style: {
-            fontSize: '11px',
-            colors: '#D1D5DB',
-            fontFamily: 'inherit',
-          },
-          align: 'right',
-          offsetX: -10,
-        },
-        axisBorder: {
-          show: true,
-          color: 'rgba(255, 255, 255, 0.05)',
-          width: 1,
-          offsetX: 0,
-          offsetY: 0,
-        },
-        axisTicks: {
-          show: true,
-          borderType: 'solid',
-          color: 'rgba(255, 255, 255, 0.05)',
-          width: 4,
-          offsetX: 0,
-          offsetY: 0,
-        },
-      },
-      {
-        seriesName: 'Volume',
-        opposite: true,
-        decimalsInFloat: 0,
-        labels: {
-          formatter: (v: number) => formatVolume(v),
-          style: {
-            fontSize: '11px',
-            colors: '#6B7280',
-            fontFamily: 'inherit',
-          },
-          align: 'left',
-          offsetX: 10,
-        },
-        axisBorder: {
-          show: true,
-          color: 'rgba(255, 255, 255, 0.05)',
-          width: 1,
-          offsetX: 0,
-          offsetY: 0,
-        },
-        axisTicks: {
-          show: true,
-          borderType: 'solid',
-          color: 'rgba(255, 255, 255, 0.05)',
-          width: 4,
-          offsetX: 0,
-          offsetY: 0,
-        },
-      },
-    ],
-    stroke: {
-      width: [1.5, 0],
-      curve: 'straight' as const,
-      dashArray: [0, 0],
-    },
-    plotOptions: {
-      candlestick: {
-        colors: {
-          upward: '#10B981', // Vert TradingView
-          downward: '#EF4444', // Rouge TradingView
-        },
-        wick: {
-          useFillColor: true,
-          wickColor: {
-            upward: '#10B981',
-            downward: '#EF4444',
-          },
-        },
-        barColors: {
-          upward: '#10B981',
-          downward: '#EF4444',
-        },
-      },
-      bar: {
-        columnWidth: '80%',
-        colors: {
-          ranges: [],
-        },
-        distributed: false,
-        borderRadius: 0,
-      },
-    },
-    dataLabels: { enabled: false },
-    legend: {
-      show: false,
-    },
-    tooltip: {
-      shared: true,
-      intersect: false,
-      followCursor: true,
-      theme: 'dark',
-      style: {
-        fontSize: '12px',
-        fontFamily: 'inherit',
-      },
-      x: {
-        show: true,
-        format: 'dd MMM yyyy HH:mm:ss',
-        formatter: undefined,
-      },
-      y: [
-        {
-          formatter: (
-            v: number,
-            {
-              dataPointIndex,
-              w,
-            }: {
-              dataPointIndex: number
-              w?: {
-                config?: {
-                  series?: Array<{
-                    data?: Array<{
-                      y?: number | number[]
-                      x?: number
-                    }>
-                  }>
-                }
-              }
-            },
-          ) => {
-            const ohlc = w?.config?.series?.[0]?.data?.[dataPointIndex]?.y
-            if (!Array.isArray(ohlc)) return formatPrice(v)
-            const [o, h, l, c] = ohlc
-            const change = c - o
-            const changePercent = ((change / o) * 100).toFixed(2)
-            const color = change >= 0 ? '#10B981' : '#EF4444'
-            return `<div style="display: flex; flex-direction: column; gap: 4px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 11px;">
-              <span style="color: #9CA3AF;">O</span>
-              <span style="color: #D1D5DB; text-align: right;">${formatPrice(o)}</span>
-              <span style="color: #9CA3AF;">H</span>
-              <span style="color: #D1D5DB; text-align: right;">${formatPrice(h)}</span>
-              <span style="color: #9CA3AF;">L</span>
-              <span style="color: #D1D5DB; text-align: right;">${formatPrice(l)}</span>
-              <span style="color: #9CA3AF;">C</span>
-              <span style="color: ${color}; text-align: right; font-weight: 600;">${formatPrice(c)}</span>
-            </div>
-            <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1);">
-              <span style="color: ${color}; font-weight: 600;">${change >= 0 ? '+' : ''}${changePercent}%</span>
-            </div>
-          </div>`
-          },
-          title: { formatter: () => '' },
-        },
-        {
-          formatter: (v: number) => formatVolume(v),
-          title: { formatter: () => 'Volume: ' },
-        },
-      ],
-      marker: {
-        show: true,
-        fillColors: ['#10B981', 'rgba(148, 163, 184, 0.45)'],
-      },
-    },
-    markers: { size: 0 },
-    crosshairs: {
-      show: true,
-      position: 'front' as const,
-      stroke: {
-        color: 'rgba(255, 255, 255, 0.1)',
-        width: 1,
-        dashArray: 3,
-      },
-    },
-    fill: {
-      type: 'solid',
-      opacity: 1,
-    },
-  }
-})
-
-watch([displayed, interval, selectedRange], async () => {
-  await nextTick()
-
-  const data = displayed.value
-  const candleData = candleSeries.value
-  const volumeData = volumeSeriesColored.value
-
-  // Mettre à jour les séries du graphique
-  try {
-    ApexCharts.exec('market-apex-klines', 'updateSeries', [
-      { data: candleData },
-      { data: volumeData },
-    ])
-  } catch {
-    // Ignore si le chart n'est pas encore initialisé
-  }
-
-  // Ne pas forcer le zoom si l'utilisateur a zoomé manuellement
-  if (isUserZooming.value) return
-
-  if (!data || data.length === 0) {
-    // Si pas de données, réinitialiser le zoom
-    try {
-      ApexCharts.exec(
-        'market-apex-klines',
-        'updateOptions',
-        {
-          xaxis: {
-            range: WINDOW_MS.value,
-          },
-        },
-        false,
-        true,
-        false,
-      )
-    } catch {
-      // Ignore si le chart n'est pas encore initialisé
+function calculateEMA(data: number[], period: number): number[] {
+  const ema: number[] = []
+  const multiplier = 2 / (period + 1)
+  for (let i = 0; i < data.length; i++) {
+    if (i === 0) {
+      ema.push(data[i])
+    } else {
+      ema.push((data[i] - ema[i - 1]) * multiplier + ema[i - 1])
     }
-    return
+  }
+  return ema
+}
+
+function calculateRSI(data: number[], period: number = 14): number[] {
+  const rsi: number[] = []
+  const changes: number[] = []
+
+  // Calculer les changements
+  for (let i = 1; i < data.length; i++) {
+    changes.push(data[i] - data[i - 1])
   }
 
-  const first = data[0]
-  const last = data[data.length - 1]
-  if (!first || !last) return
+  for (let i = 0; i < data.length; i++) {
+    if (i < period) {
+      rsi.push(NaN)
+    } else {
+      const recentChanges = changes.slice(i - period, i)
+      const gains = recentChanges.filter((c) => c > 0).reduce((a, b) => a + b, 0) / period
+      const losses =
+        Math.abs(recentChanges.filter((c) => c < 0).reduce((a, b) => a + b, 0)) / period
 
-  // Zoomer sur la plage complète des données affichées
-  const max = last.t
-  const min = Math.max(first.t, max - WINDOW_MS.value)
-
-  // Utiliser setTimeout pour s'assurer que le graphique est prêt
-  setTimeout(() => {
-    try {
-      ApexCharts.exec('market-apex-klines', 'zoomX', min, max)
-    } catch {
-      // Ignore si le chart n'est pas encore initialisé
+      if (losses === 0) {
+        rsi.push(100)
+      } else {
+        const rs = gains / losses
+        rsi.push(100 - 100 / (1 + rs))
+      }
     }
-  }, 100)
-})
+  }
 
-// Réinitialiser le flag de zoom utilisateur après un délai
+  return rsi
+}
+
+// Fonction pour basculer un indicateur
+function toggleIndicator(indicator: 'volume' | 'sma20' | 'sma50' | 'ema20' | 'rsi') {
+  activeIndicators.value[indicator] = !activeIndicators.value[indicator]
+  updateIndicators()
+  // Synchroniser avec selectedIndicators
+  syncSelectedIndicators()
+}
+
+// Fonction pour sélectionner tous les indicateurs
+function selectAllIndicators() {
+  activeIndicators.value = {
+    volume: true,
+    sma20: true,
+    sma50: true,
+    ema20: true,
+    rsi: true,
+  }
+  updateIndicators()
+  syncSelectedIndicators()
+}
+
+// Fonction pour désélectionner tous les indicateurs
+function deselectAllIndicators() {
+  activeIndicators.value = {
+    volume: false,
+    sma20: false,
+    sma50: false,
+    ema20: false,
+    rsi: false,
+  }
+  updateIndicators()
+  syncSelectedIndicators()
+}
+
+// Synchroniser selectedIndicators avec activeIndicators
+function syncSelectedIndicators() {
+  const selected: string[] = []
+  if (activeIndicators.value.volume) selected.push('volume')
+  if (activeIndicators.value.sma20) selected.push('sma20')
+  if (activeIndicators.value.sma50) selected.push('sma50')
+  if (activeIndicators.value.ema20) selected.push('ema20')
+  if (activeIndicators.value.rsi) selected.push('rsi')
+  selectedIndicators.value = selected
+}
+
+// Mettre à jour les indicateurs
+function updateIndicators() {
+  if (!chart || displayed.value.length === 0) return
+
+  const closes = displayed.value.map((r) => r.c)
+  const times = displayed.value.map((r) => Math.floor(r.t / 1000))
+
+  // Volume
+  if (volSeries) {
+    if (activeIndicators.value.volume) {
+      const volumeData: HistogramData[] = displayed.value.map((r, index) => {
+        const time = Math.floor(r.t / 1000)
+        const prev = index > 0 ? displayed.value[index - 1] : null
+        const color = !prev || r.c >= prev.c ? '#10B981' : '#EF4444'
+        return {
+          time: time as Time,
+          value: r.v,
+          color,
+        }
+      })
+      volSeries.setData(volumeData)
+    } else {
+      volSeries.setData([])
+    }
+  }
+
+  // SMA 20
+  if (sma20Series) {
+    if (activeIndicators.value.sma20) {
+      const sma20 = calculateSMA(closes, 20)
+      const sma20Data: LineData[] = times
+        .map((time, i) => ({
+          time: time as Time,
+          value: sma20[i],
+        }))
+        .filter((d) => Number.isFinite(d.value))
+      sma20Series.setData(sma20Data)
+    } else {
+      sma20Series.setData([])
+    }
+  }
+
+  // SMA 50
+  if (sma50Series) {
+    if (activeIndicators.value.sma50) {
+      const sma50 = calculateSMA(closes, 50)
+      const sma50Data: LineData[] = times
+        .map((time, i) => ({
+          time: time as Time,
+          value: sma50[i],
+        }))
+        .filter((d) => Number.isFinite(d.value))
+      sma50Series.setData(sma50Data)
+    } else {
+      sma50Series.setData([])
+    }
+  }
+
+  // EMA 20
+  if (ema20Series) {
+    if (activeIndicators.value.ema20) {
+      const ema20 = calculateEMA(closes, 20)
+      const ema20Data: LineData[] = times
+        .map((time, i) => ({
+          time: time as Time,
+          value: ema20[i],
+        }))
+        .filter((d) => Number.isFinite(d.value))
+      ema20Series.setData(ema20Data)
+    } else {
+      ema20Series.setData([])
+    }
+  }
+
+  // RSI
+  if (rsiSeries) {
+    if (activeIndicators.value.rsi) {
+      const rsi = calculateRSI(closes, 14)
+      const rsiData: LineData[] = times
+        .map((time, i) => ({
+          time: time as Time,
+          value: rsi[i],
+        }))
+        .filter((d) => Number.isFinite(d.value))
+      rsiSeries.setData(rsiData)
+    } else {
+      rsiSeries.setData([])
+    }
+  }
+}
+
+// Synchroniser selectedIndicators avec activeIndicators au démarrage
 watch(
-  () => displayed.value.length,
+  activeIndicators,
   () => {
-    if (isUserZooming.value) {
-      // Réinitialiser après 5 secondes d'inactivité pour permettre le suivi automatique
-      setTimeout(() => {
-        isUserZooming.value = false
-      }, 5000)
-    }
+    syncSelectedIndicators()
   },
+  { deep: true, immediate: true },
 )
 
-// Déconnexion explicite quand on quitte le composant
+// Mettre à jour le chart quand les données changent
+watch([displayed, interval, selectedRange], () => {
+  // Réinitialiser le flag de zoom quand on change d'intervalle ou de plage
+  if (isUserZooming.value) {
+    isUserZooming.value = false
+    if (zoomResetTimer) {
+      clearTimeout(zoomResetTimer)
+      zoomResetTimer = null
+    }
+  }
+
+  nextTick(() => {
+    if (!chart || !candleSeries || !volSeries) {
+      if (chartContainer.value) {
+        initChart()
+        setTimeout(() => {
+          updateChart()
+        }, 100)
+      }
+      return
+    }
+    updateChart()
+  })
+})
+
+// Mettre à jour les indicateurs quand ils changent
+watch(
+  activeIndicators,
+  () => {
+    updateIndicators()
+  },
+  { deep: true },
+)
+
+// Nettoyage
 onBeforeUnmount(() => {
+  if (zoomResetTimer) {
+    clearTimeout(zoomResetTimer)
+    zoomResetTimer = null
+  }
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+  if (chart) {
+    chart.remove()
+    chart = null
+  }
   enabled.value = false
   disconnectWS()
 })
