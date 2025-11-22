@@ -2,8 +2,9 @@ import { ref, computed, onBeforeUnmount, watch } from 'vue'
 import type { Ref } from 'vue'
 
 export interface KlineWebSocketMessage {
-  type: 'connected' | 'klines' | 'subscribed' | 'ping' | 'error'
+  type: 'connected' | 'klines' | 'subscribed' | 'limit_set' | 'ping' | 'error'
   message?: string
+  limit?: number
   data?: KlineData[]
 }
 
@@ -47,6 +48,7 @@ export interface UseKlinesWebSocketOptions {
   symbol: Ref<string> | string
   interval: Ref<string> | string
   updateInterval?: number // Intervalle de mise à jour en secondes (défaut: 1)
+  limit?: Ref<number> | number // Nombre de klines à retourner (défaut: 100, max: 1000)
   enabled?: Ref<boolean> | boolean
 }
 
@@ -56,6 +58,10 @@ export function useKlinesWebSocket(opts: UseKlinesWebSocketOptions) {
   const symbol = typeof opts.symbol === 'string' ? ref(opts.symbol) : opts.symbol
   const interval = typeof opts.interval === 'string' ? ref(opts.interval) : opts.interval
   const updateInterval = opts.updateInterval ?? 1
+  const limit =
+    typeof opts.limit === 'number' || typeof opts.limit === 'undefined'
+      ? ref(opts.limit ?? 100)
+      : opts.limit
   const enabled =
     typeof opts.enabled === 'boolean' ? ref(opts.enabled) : (opts.enabled ?? ref(true))
 
@@ -64,6 +70,7 @@ export function useKlinesWebSocket(opts: UseKlinesWebSocketOptions) {
   const error = ref<string | null>(null)
   const connected = ref(false)
   const subscribed = ref(false)
+  const currentLimit = ref(typeof limit === 'number' ? limit : limit.value)
 
   let ws: WebSocket | null = null
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null
@@ -76,16 +83,27 @@ export function useKlinesWebSocket(opts: UseKlinesWebSocketOptions) {
   const wsUrl = computed(() => {
     const sym = symbol.value
     const int = interval.value
+    const lim = typeof limit === 'number' ? limit : limit.value
     const url = new URL(`${baseUrl}/ws/klines/${sym}/${int}`)
     if (updateInterval !== 1) {
       url.searchParams.set('update_interval', String(updateInterval))
     }
+    if (lim !== 100) {
+      url.searchParams.set('limit', String(lim))
+    }
     return url.toString()
   })
 
-  function sendMessage(action: 'subscribe' | 'unsubscribe' | 'get_latest' | 'ping') {
+  function sendMessage(
+    action: 'subscribe' | 'unsubscribe' | 'get_latest' | 'ping' | 'set_limit',
+    payload?: { limit?: number },
+  ) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ action }))
+      const message: { action: string; limit?: number } = { action }
+      if (payload?.limit !== undefined) {
+        message.limit = payload.limit
+      }
+      ws.send(JSON.stringify(message))
     }
   }
 
@@ -110,20 +128,32 @@ export function useKlinesWebSocket(opts: UseKlinesWebSocketOptions) {
       const message: KlineWebSocketMessage = JSON.parse(event.data)
 
       switch (message.type) {
-        case 'connected':
+        case 'connected': {
           connected.value = true
           error.value = null
           reconnectAttempts = 0
+          if (message.limit) {
+            currentLimit.value = message.limit
+          }
+          // Définir le nombre de klines à recevoir si pas fait dans l'URL
+          const lim = typeof limit === 'number' ? limit : limit.value
+          if (lim !== 100 && lim !== message.limit) {
+            sendMessage('set_limit', { limit: lim })
+          }
           // S'abonner automatiquement après connexion
-          // Le serveur enverra automatiquement les données après subscription
           sendMessage('subscribe')
           break
+        }
 
         case 'subscribed':
           subscribed.value = true
           pending.value = false
-          // Le serveur enverra automatiquement les données après subscription
-          // Pas besoin d'appeler get_latest ici, cela serait redondant
+          break
+
+        case 'limit_set':
+          if (message.limit) {
+            currentLimit.value = message.limit
+          }
           break
 
         case 'klines':
@@ -143,8 +173,10 @@ export function useKlinesWebSocket(opts: UseKlinesWebSocketOptions) {
           break
 
         case 'ping':
-          // Répondre au ping du serveur
-          sendMessage('ping')
+          // Répondre au ping du serveur avec pong
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ action: 'pong' }))
+          }
           break
 
         case 'error':
@@ -317,14 +349,22 @@ export function useKlinesWebSocket(opts: UseKlinesWebSocketOptions) {
     disconnect()
   })
 
+  function setLimit(newLimit: number) {
+    if (newLimit >= 1 && newLimit <= 1000) {
+      sendMessage('set_limit', { limit: newLimit })
+    }
+  }
+
   return {
     data,
     pending,
     error,
     connected,
     subscribed,
+    currentLimit,
     connect,
     disconnect,
     refresh,
+    setLimit,
   }
 }
