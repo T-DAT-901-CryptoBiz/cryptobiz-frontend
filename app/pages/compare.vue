@@ -310,7 +310,7 @@ import { mapKlines } from '~/composables/useKlines'
 import type { Interval } from '~/types/binance'
 
 useHead({
-  title: 'Compare Cryptocurrencies',
+  title: 'Compare - CryptoBiz',
 })
 
 const { rows } = useAll24h()

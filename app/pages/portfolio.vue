@@ -714,7 +714,7 @@ function selectSymbol(symbol: string) {
 }
 
 useHead({
-  title: 'Portfolio Tracker',
+  title: 'Portfolio - CryptoBiz',
 })
 
 const { isAuthenticated, pending: authPending } = useAuth()

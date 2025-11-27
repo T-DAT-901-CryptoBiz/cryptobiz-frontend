@@ -4,6 +4,9 @@ import { requireAdmin } from '../../../utils/admin'
 export default defineEventHandler(async (event: H3Event) => {
   await requireAdmin(event)
 
+  const config = useRuntimeConfig()
+  const klineApiUrl = config.klineApiUrl || 'http://127.0.0.1:8004'
+
   try {
     const query = getQuery(event)
     const page = Number(query.page) || 1
@@ -13,7 +16,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const dateFrom = query.date_from as string | undefined
 
     // Construire l'URL de l'API externe
-    const baseUrl = 'http://127.0.0.1:8004/api/v1/articles'
+    const baseUrl = `${klineApiUrl}/api/v1/articles`
     const params = new URLSearchParams()
     params.set('page', String(page))
     params.set('per_page', String(perPage))

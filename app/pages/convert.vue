@@ -286,7 +286,7 @@ import { useSymbolsUniverse } from '~/composables/useSymbolsUniverse'
 import type { ConversionHistory } from '~/composables/useCryptoConverter'
 
 useHead({
-  title: 'Crypto Converter',
+  title: 'Converter - CryptoBiz',
 })
 
 const {

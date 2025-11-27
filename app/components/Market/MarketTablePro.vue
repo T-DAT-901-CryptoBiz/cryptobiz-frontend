@@ -285,6 +285,10 @@ const rows = computed(() => {
 
 const futSet = computed(() => new Set(props.futuresSet || []))
 const { ticker24h } = useBinanceMarket()
+const runtimeConfig = useRuntimeConfig()
+const binanceFuturesRestBase = computed(
+  () => runtimeConfig.public?.binanceFuturesRestBase || 'https://fapi.binance.com',
+)
 
 async function makeRow(sym: string): Promise<Row> {
   if (import.meta.server) {
@@ -296,13 +300,13 @@ async function makeRow(sym: string): Promise<Row> {
 
   if (shouldUseFutures) {
     const t = await fetch(
-      `https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${encodeURIComponent(sym)}`,
+      `${binanceFuturesRestBase.value}/fapi/v1/ticker/24hr?symbol=${encodeURIComponent(sym)}`,
     ).then((r) => r.json())
 
     let spark: number[] = []
     try {
       const k = await fetch(
-        `https://fapi.binance.com/fapi/v1/continuousKlines?pair=${encodeURIComponent(
+        `${binanceFuturesRestBase.value}/fapi/v1/continuousKlines?pair=${encodeURIComponent(
           sym,
         )}&contractType=PERPETUAL&interval=1h&limit=168`,
       ).then((r) => r.json())

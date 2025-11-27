@@ -87,6 +87,10 @@ function onFilterChange(p: { category: string; tag: string }) {
   tag.value = (p.tag as 'all' | 'trending' | 'gainers' | 'losers' | 'volume' | string) || 'all'
 }
 
+useHead({
+  title: 'Markets - CryptoBiz',
+})
+
 const { universe: spotUni, loading: spotLoading } = useSymbolsUniverse() // Ex: ['BTCUSDT', ...]
 const { symbols: futUni, pending: futPending } = useFuturesUniverse() // Ex: ['BTCUSDT', ...] (USDT-M futures)
 

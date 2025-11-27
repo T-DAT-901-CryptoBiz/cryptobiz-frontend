@@ -1,5 +1,10 @@
 import { computed, ref, watchEffect } from 'vue'
 
+const getKlineApiUrl = () => {
+  const config = useRuntimeConfig()
+  return config.public?.klineApiUrl || 'http://127.0.0.1:8004'
+}
+
 export type Interval = '1m' | '3m' | '5m' | '15m' | '30m' | '1h' | '2h' | '4h' | '1D' | '1W' | '1M'
 
 export interface OhlcvPoint {
@@ -60,7 +65,7 @@ export function useKlinesApi(params: Partial<FetchParams>) {
   const limit = ref<number | undefined>(params.limit ?? 1000)
 
   const url = computed(() => {
-    const base = `http://127.0.0.1:8004/api/v1/klines/${symbol.value}/${interval.value}/ohlcv`
+    const base = `${getKlineApiUrl()}/api/v1/klines/${symbol.value}/${interval.value}/ohlcv`
     const q = new URLSearchParams()
     if (typeof limit.value === 'number') q.set('limit', String(limit.value))
     if (typeof from.value === 'number') q.set('from', String(Math.floor(from.value / 1000))) // ← s

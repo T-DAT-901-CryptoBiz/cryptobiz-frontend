@@ -121,6 +121,10 @@ definePageMeta({
   layout: false,
 })
 
+useHead({
+  title: 'Login - CryptoBiz',
+})
+
 const { login, loginWithGoogle } = useAuth()
 const router = useRouter()
 const route = useRoute()

@@ -1,6 +1,11 @@
 import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import type { ApiRealtimeRow, OhlcvPoint, Interval } from '~/types/klines'
 
+const getKlineApiUrl = () => {
+  const config = useRuntimeConfig()
+  return config.public?.klineApiUrl || 'http://127.0.0.1:8004'
+}
+
 export interface UseKlinesRealtimeOptions {
   symbol: string
   interval?: Interval // par défaut '1m'
@@ -21,7 +26,7 @@ function mapRealtimeRow(row: ApiRealtimeRow): OhlcvPoint {
 }
 
 export function useKlinesRealtime(opts: UseKlinesRealtimeOptions) {
-  const baseUrl = 'http://127.0.0.1:8004'
+  const baseUrl = getKlineApiUrl()
 
   const symbol = ref(opts.symbol)
   const interval = ref<Interval>(opts.interval ?? '1m')

@@ -4,6 +4,9 @@ import { requireAdmin } from '../../../utils/admin'
 export default defineEventHandler(async (event: H3Event) => {
   await requireAdmin(event)
 
+  const config = useRuntimeConfig()
+  const klineApiUrl = config.klineApiUrl || 'http://127.0.0.1:8004'
+
   try {
     const query = getQuery(event)
     const symbol = (query.symbol as string) || 'BTCUSDT'
@@ -11,7 +14,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const limit = Number(query.limit) || 100
 
     // Construire l'URL de l'API externe
-    const baseUrl = `http://127.0.0.1:8004/api/v1/klines/${symbol}/${interval}/ohlcv`
+    const baseUrl = `${klineApiUrl}/api/v1/klines/${symbol}/${interval}/ohlcv`
     const params = new URLSearchParams()
     params.set('limit', String(limit))
     if (query.from) params.set('from', String(query.from))
@@ -67,7 +70,6 @@ export default defineEventHandler(async (event: H3Event) => {
     }
   } catch (error) {
     console.error('[API /api/admin/klines GET] Error:', error)
-    console.error('[API /api/admin/klines GET] URL attempted:', url)
     if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error
     }

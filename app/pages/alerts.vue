@@ -516,7 +516,7 @@ import { useAll24h } from '~/composables/useAll24h'
 import type { PriceAlert } from '~/server/utils/alerts'
 
 useHead({
-  title: 'Price Alerts',
+  title: 'Price Alerts - CryptoBiz',
 })
 
 const { isAuthenticated, pending: authPending } = useAuth()

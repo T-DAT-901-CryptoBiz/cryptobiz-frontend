@@ -1,5 +1,10 @@
 import { computed, toValue } from 'vue'
 
+const getKlineApiUrl = () => {
+  const config = useRuntimeConfig()
+  return config.public?.klineApiUrl || 'http://127.0.0.1:8004'
+}
+
 export type Article = {
   id: number
   title: string
@@ -145,7 +150,7 @@ export function useArticlesList(params: MaybeRef<ListQuery>) {
   const { data, pending, refresh, error } = useAsyncData<ArticleList>(
     key,
     () =>
-      $fetch('http://127.0.0.1:8004/api/v1/articles', {
+      $fetch(`${getKlineApiUrl()}/api/v1/articles`, {
         method: 'GET',
         query: p.value,
       }),
@@ -168,19 +173,19 @@ export function useArticle(id: MaybeRef<number>) {
 
 export function useArticleCategories() {
   return useAsyncData('articles:categories', () =>
-    $fetch<string[]>('http://127.0.0.1:8004/api/v1/articles/categories'),
+    $fetch<string[]>(`${getKlineApiUrl()}/api/v1/articles/categories`),
   )
 }
 
 export function useArticleSources() {
   return useAsyncData('articles:sources', () =>
-    $fetch<string[]>('http://127.0.0.1:8004/api/v1/articles/sources'),
+    $fetch<string[]>(`${getKlineApiUrl()}/api/v1/articles/sources`),
   )
 }
 
 export function useArticleStats() {
   const { data, pending, refresh, error } = useAsyncData<ArticleStats>('news:stats', () =>
-    $fetch('http://127.0.0.1:8004/api/v1/articles/stats'),
+    $fetch(`${getKlineApiUrl()}/api/v1/articles/stats`),
   )
 
   const total = computed(() => data.value?.total_articles ?? 0)

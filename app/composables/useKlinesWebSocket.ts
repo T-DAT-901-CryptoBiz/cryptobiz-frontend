@@ -1,6 +1,11 @@
 import { ref, computed, onBeforeUnmount, watch } from 'vue'
 import type { Ref } from 'vue'
 
+const getKlineWsUrl = () => {
+  const config = useRuntimeConfig()
+  return config.public?.klineWsUrl || 'ws://127.0.0.1:8004'
+}
+
 export interface KlineWebSocketMessage {
   type: 'connected' | 'klines' | 'subscribed' | 'ping' | 'error'
   message?: string
@@ -51,7 +56,7 @@ export interface UseKlinesWebSocketOptions {
 }
 
 export function useKlinesWebSocket(opts: UseKlinesWebSocketOptions) {
-  const baseUrl = 'ws://127.0.0.1:8004'
+  const baseUrl = getKlineWsUrl()
 
   const symbol = typeof opts.symbol === 'string' ? ref(opts.symbol) : opts.symbol
   const interval = typeof opts.interval === 'string' ? ref(opts.interval) : opts.interval

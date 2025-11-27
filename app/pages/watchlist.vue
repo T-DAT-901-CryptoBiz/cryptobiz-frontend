@@ -94,6 +94,10 @@ const filters = [
   { label: 'Futures', value: 'futures' as Filter },
 ]
 
+useHead({
+  title: 'Watchlist - CryptoBiz',
+})
+
 const q = ref('')
 const filter = ref<Filter>('all')
 

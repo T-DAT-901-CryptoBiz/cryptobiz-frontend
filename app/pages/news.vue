@@ -167,6 +167,10 @@ const q = ref('')
 const categoryUI = ref<'favorites' | 'all'>('all')
 const tagUI = ref<'all' | 'trending' | 'breaking' | 'unread'>('all')
 
+useHead({
+  title: 'News - CryptoBiz',
+})
+
 function onSearch(v: string) {
   q.value = (v ?? '').trim()
 }
@@ -232,9 +236,10 @@ watch(
         for (let i = 0; i < ids.length; i += batchSize) {
           const batch = ids.slice(i, i + batchSize)
           // Charger chaque article individuellement
+          const klineApiUrl = useRuntimeConfig().public?.klineApiUrl || 'http://127.0.0.1:8004'
           const results = await Promise.allSettled(
             batch.map((id) =>
-              $fetch<Article>(`http://127.0.0.1:8004/api/v1/articles/${id}`).catch(() => null),
+              $fetch<Article>(`${klineApiUrl}/api/v1/articles/${id}`).catch(() => null),
             ),
           )
           results.forEach((result) => {
@@ -283,7 +288,8 @@ watch(favoriteIds, async (newIds, oldIds) => {
       const addedId = newIds.find((id) => !oldIds.includes(id))
       if (addedId && !favoriteItems.value.find((a) => a.id === addedId)) {
         try {
-          const article = await $fetch<Article>(`http://127.0.0.1:8004/api/v1/articles/${addedId}`)
+          const klineApiUrl = useRuntimeConfig().public?.klineApiUrl || 'http://127.0.0.1:8004'
+          const article = await $fetch<Article>(`${klineApiUrl}/api/v1/articles/${addedId}`)
           if (article) {
             favoriteItems.value.push(article)
             // Re-trier

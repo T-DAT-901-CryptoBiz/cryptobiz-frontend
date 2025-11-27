@@ -2018,7 +2018,7 @@
       >
         <div class="flex items-center justify-between gap-3">
           <h3 class="text-lg font-semibold text-white">Integration Checklist</h3>
-          <span class="text-xs text-white/40">Bonnes pratiques à vérifier</span>
+          <span class="text-xs text-white/40">Best practices to check</span>
         </div>
         <ul class="space-y-3 text-sm text-white/70">
           <li class="flex items-start gap-3">
@@ -2117,6 +2117,10 @@ interface UserFavorites {
 
 definePageMeta({
   middleware: 'admin',
+})
+
+useHead({
+  title: 'Admin Dashboard - CryptoBiz',
 })
 
 const { user: currentUser } = useAuth()
@@ -2762,7 +2766,7 @@ interface WebsocketUsageEntry {
   components: Array<{ label: string; path: string }>
 }
 
-const serverWsBaseUrl = computed(() => runtimeConfig.public?.wsBaseUrl ?? 'ws://127.0.0.1:8004')
+const serverWsBaseUrl = computed(() => runtimeConfig.public?.klineWsUrl ?? 'ws://127.0.0.1:8004')
 const binanceWsBaseUrl = computed(
   () => runtimeConfig.public?.binanceWsBase ?? 'wss://stream.binance.com:9443/ws',
 )
@@ -3084,13 +3088,20 @@ onBeforeUnmount(() => {
   if (copyTimeout) clearTimeout(copyTimeout)
 })
 
+const binanceRestBase = computed(
+  () => runtimeConfig.public?.binanceRestBase ?? 'https://api.binance.com',
+)
+const binanceFuturesRestBase = computed(
+  () => runtimeConfig.public?.binanceFuturesRestBase ?? 'https://fapi.binance.com',
+)
+
 const binanceHttpEndpoints = computed(() => [
   {
     name: '24h ticker statistics',
     method: 'GET',
-    url: 'https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT',
+    url: `${binanceRestBase.value}/api/v3/ticker/24hr?symbol=BTCUSDT`,
     usage: 'Market tables, highlights, portfolio valuations',
-    sampleRequest: 'GET https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT',
+    sampleRequest: `GET ${binanceRestBase.value}/api/v3/ticker/24hr?symbol=BTCUSDT`,
     samplePayload: undefined,
     sampleResponse: JSON.stringify(
       {
@@ -3107,9 +3118,9 @@ const binanceHttpEndpoints = computed(() => [
   {
     name: 'Exchange info (spot)',
     method: 'GET',
-    url: 'https://api.binance.com/api/v3/exchangeInfo',
+    url: `${binanceRestBase.value}/api/v3/exchangeInfo`,
     usage: 'Symbols metadata & filters',
-    sampleRequest: 'GET https://api.binance.com/api/v3/exchangeInfo?symbol=BTCUSDT',
+    sampleRequest: `GET ${binanceRestBase.value}/api/v3/exchangeInfo?symbol=BTCUSDT`,
     samplePayload: undefined,
     sampleResponse: JSON.stringify(
       {
@@ -3129,9 +3140,9 @@ const binanceHttpEndpoints = computed(() => [
   {
     name: 'Compare page historical klines',
     method: 'GET',
-    url: 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=500',
+    url: `${binanceRestBase.value}/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=500`,
     usage: 'Initial chart load before live sync',
-    sampleRequest: 'GET https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=500',
+    sampleRequest: `GET ${binanceRestBase.value}/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=500`,
     samplePayload: undefined,
     sampleResponse: JSON.stringify(
       [[1719990000000, '70780.12', '70912.45', '70690.11', '70850.32', '321.45']],
@@ -3142,9 +3153,9 @@ const binanceHttpEndpoints = computed(() => [
   {
     name: 'Futures 24h ticker',
     method: 'GET',
-    url: 'https://fapi.binance.com/fapi/v1/ticker/24hr?symbol={symbol}',
+    url: `${binanceFuturesRestBase.value}/fapi/v1/ticker/24hr?symbol={symbol}`,
     usage: 'Perpetual futures metrics used by pro market tables',
-    sampleRequest: 'GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT',
+    sampleRequest: `GET ${binanceFuturesRestBase.value}/fapi/v1/ticker/24hr?symbol=BTCUSDT`,
     samplePayload: undefined,
     sampleResponse: JSON.stringify(
       {
@@ -3160,10 +3171,9 @@ const binanceHttpEndpoints = computed(() => [
   {
     name: 'Futures continuous klines',
     method: 'GET',
-    url: 'https://fapi.binance.com/fapi/v1/continuousKlines?pair={pair}&contractType=PERPETUAL&interval=1h&limit=168',
+    url: `${binanceFuturesRestBase.value}/fapi/v1/continuousKlines?pair={pair}&contractType=PERPETUAL&interval=1h&limit=168`,
     usage: 'Derivatives sparkline hydration for futures dashboards',
-    sampleRequest:
-      'GET https://fapi.binance.com/fapi/v1/continuousKlines?pair=BTCUSDT&contractType=PERPETUAL&interval=1h&limit=168',
+    sampleRequest: `GET ${binanceFuturesRestBase.value}/fapi/v1/continuousKlines?pair=BTCUSDT&contractType=PERPETUAL&interval=1h&limit=168`,
     samplePayload: undefined,
     sampleResponse: JSON.stringify(
       [[1719990000000, '70750.12', '70920.00', '70680.00', '70810.53', '412.12']],
@@ -3174,9 +3184,9 @@ const binanceHttpEndpoints = computed(() => [
   {
     name: 'Futures exchange info',
     method: 'GET',
-    url: 'https://fapi.binance.com/fapi/v1/exchangeInfo',
+    url: `${binanceFuturesRestBase.value}/fapi/v1/exchangeInfo`,
     usage: 'Universe metadata for futures watchlists and filters',
-    sampleRequest: 'GET https://fapi.binance.com/fapi/v1/exchangeInfo?symbol=BTCUSDT',
+    sampleRequest: `GET ${binanceFuturesRestBase.value}/fapi/v1/exchangeInfo?symbol=BTCUSDT`,
     samplePayload: undefined,
     sampleResponse: JSON.stringify(
       {

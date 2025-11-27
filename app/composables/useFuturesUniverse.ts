@@ -1,12 +1,15 @@
 import { ref, onMounted } from 'vue'
 
 export function useFuturesUniverse() {
+  const config = useRuntimeConfig()
+  const binanceFuturesRestBase = config.public?.binanceFuturesRestBase || 'https://fapi.binance.com'
+
   const symbols = ref<string[]>([])
   const pending = ref(true)
 
   onMounted(async () => {
     try {
-      const res = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo')
+      const res = await fetch(`${binanceFuturesRestBase}/fapi/v1/exchangeInfo`)
       const j = (await res.json()) as {
         symbols?: Array<{
           contractType?: string
